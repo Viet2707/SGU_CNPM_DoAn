@@ -1,0 +1,95 @@
+services:
+
+  
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "5010:5001"
+    depends_on:
+      - mongo
+    environment:
+      - PORT=5001
+      -  MONGO_URI=mongodb+srv://vietnx2707_db_user:123@cluster0.1ijcrzp.mongodb.net/authdb?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=supersecret123
+      
+
+  restaurant-service:
+    build: ./restaurant-service
+    ports:
+      - "5020:5002"
+    depends_on:
+      - mongo
+    environment:
+      - PORT=5002
+      - MONGO_URI=mongodb+srv://vietnx2707_db_user:123@cluster0.1ijcrzp.mongodb.net/restaurantdb?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=supersecret123
+      - CLOUDINARY_CLOUD_NAME=dhkwjpxos
+      - CLOUDINARY_API_KEY=462713631227229
+      - CLOUDINARY_API_SECRET=iCrDe5L2tClDf_6l1gwRmib6rEo
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "5030:5003"
+    depends_on:
+      - mongo
+    environment:
+      - PORT=5003
+      - MONGO_URI=mongodb+srv://vietnx2707_db_user:123@cluster0.1ijcrzp.mongodb.net/orderdb?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=supersecret123
+
+  delivery-service:
+    build: ./delivery-service
+    ports:
+      - "5040:5004"
+    depends_on:
+      - order-service
+    environment:
+      - PORT=5004
+      - ORDER_SERVICE_URL=http://order-service:5003
+      - JWT_SECRET=supersecret123
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "5060:5006"
+    env_file:
+      - ./notification-service/.env
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "5080:5008"
+    environment:
+      - PORT=5008
+      - STRIPE_SECRET_KEY=sk_test_51S8Mu3L5S2BtEXK0Mtpi70zJFcLhIJXl7LwZe52ibq4J9K5U4mM1vaBz9M8T0dk2oPp3pyuBHrNpdlWmEP66abSc00aNmopKTv
+      - JWT_SECRET=supersecret123
+      - MONGO_URI=mongodb+srv://vietnx2707_db_user:123@cluster0.1ijcrzp.mongodb.net/paymentdb?retryWrites=true&w=majority&appName=Cluster0
+    depends_on:
+      - mongo
+
+  restaurant-service-j:
+    build: ./restaurent-service-j
+    ports:
+      - "6010:6001"
+    env_file:
+      - ./restaurent-service-j/.env
+  order-service-j:
+    build: ./order-service-j
+    ports:
+      - "6020:6002"
+    env_file:
+      - ./order-service-j/.env
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+  
+  # frontend:
+  #   build: ./client
+  #   ports:
+  #     - "3000:3000"
+  #   stdin_open: true
+  #   tty: true
