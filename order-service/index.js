@@ -7,6 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const adminRoutes = require("./routes/admin");
+app.use("/admin", adminRoutes);
+
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Order DB connected'))
   .catch(err => console.error('Mongo Error:', err));

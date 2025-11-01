@@ -213,6 +213,14 @@ router.get('/menu/all', verifyToken, async (req, res) => {
   }
 });
 
-
+router.get("/api/restaurants", async (req, res) => {
+  try {
+    const restaurants = await Restaurant.find({}, "_id name ownerId");
+    res.json(restaurants);
+  } catch (err) {
+    console.error("Fetch restaurants error:", err.message);
+    res.status(500).json({ message: "Failed to fetch restaurants" });
+  }
+});
 
 module.exports = router;

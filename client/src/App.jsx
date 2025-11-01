@@ -14,6 +14,8 @@ import RestaurantOrders from './pages/RestaurantOrders';
 import HomeAll from './pages/HomeAll';
 import ProtectedLayout from './component/ProtectedLayout';
 import { CartProvider } from './CartContext';
+          import AdminDashboard from "./pages/AdminDashboard";
+
 
 const App = () => {
   return (
@@ -39,7 +41,15 @@ const App = () => {
           <Route element={<ProtectedLayout allowedRoles={['delivery']} />}>
             <Route path="/delivery-admin" element={<DeliveryAdminPanel />} />
             <Route path="/delivery/orders/all" element={<AllOrders />} />
+          </Route>    
+
+          <Route element={<ProtectedLayout allowedRoles={['admin']} />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Route>
+
+         
+
+
         </Routes>
       </BrowserRouter>
     </CartProvider>

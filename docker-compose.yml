@@ -46,6 +46,8 @@ services:
       - PAYMENT_SERVICE_URL=http://payment-service:5008
     depends_on:
       - mongo
+      - auth-service
+      - restaurant-service
       - rabbitmq
     restart: always
 

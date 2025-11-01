@@ -8,7 +8,7 @@ router.get('/users', verifyToken, allowRoles('admin'), async (req, res) => {
   const users = await User.find({}, '-password'); // exclude passwords
   res.send(users);
 });
-
+  
 // Get all restaurants (admin only)
 router.get('/restaurants', verifyToken, allowRoles('admin'), async (req, res) => {
   const restaurants = await User.find({ role: 'restaurant' }, '-password');
