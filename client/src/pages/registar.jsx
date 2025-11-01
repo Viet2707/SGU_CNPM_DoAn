@@ -70,7 +70,7 @@ export default function Register() {
             <option value="customer">Customer</option>
             <option value="restaurant">Restaurant</option>
             <option value="delivery">Delivery</option>
-            <option value="admin">Admin</option>
+            {/* <option value="admin">Admin</option> */}
           </select>
 
           <button
