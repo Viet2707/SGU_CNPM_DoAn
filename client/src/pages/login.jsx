@@ -90,13 +90,6 @@ export default function Login() {
             {loading ? "Continuing..." : "Continue"}
           </button>
         </form>
-
-        {/* Terms Text */}
-        <p className="text-xs text-gray-500 text-center mt-6">
-          By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages,
-          including by automated means, from Uber and its affiliates to the
-          number provided.
-        </p>
       </div>
     </div>
   );
