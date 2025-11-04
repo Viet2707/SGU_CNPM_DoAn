@@ -91,13 +91,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Divider and Alternative Login Options */}
-        <div className="w-full flex items-center my-4">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-gray-500">or</span>
-          <div className="flex-grow border-t border-gray-300"></div>
-        </div>
-
         {/* Continue with Apple */}
         <button className="w-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 py-3 rounded-lg font-semibold transition mb-2">
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
