@@ -28,7 +28,7 @@ const HomeAll = () => {
       setError('');
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5020/restaurant/menu/all', {
+        const response = await axios.get('http://localhost:8000/restaurant/menu/all', {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log('Fetched menu items:', response.data);

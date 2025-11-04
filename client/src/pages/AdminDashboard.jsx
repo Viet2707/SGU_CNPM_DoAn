@@ -9,7 +9,7 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5030/admin/stats", {
+        const res = await axios.get("http://localhost:8000/admin/stats", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setStats(res.data);

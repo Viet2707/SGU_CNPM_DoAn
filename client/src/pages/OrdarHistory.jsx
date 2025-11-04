@@ -19,7 +19,7 @@ const OrderHistory = () => {
           endpoint = '/order/delivery';
         }
 
-        const response = await axios.get(`http://localhost:5030${endpoint}`, {
+        const response = await axios.get(`http://localhost:8000${endpoint}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

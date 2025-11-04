@@ -107,7 +107,7 @@ const CreateOrder = () => {
     const fetchRestaurants = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5030/order/restaurants', {
+        const response = await axios.get('http://localhost:8000/order/restaurants', {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log('Fetched restaurants:', response.data);
@@ -130,7 +130,7 @@ const CreateOrder = () => {
         console.log('Fetching payment methods with:', { email, name });
   
         const response = await axios.post(
-          'http://localhost:5080/payment/customer',
+          'http://localhost:8000/payment/customer',
           { email, name },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -165,7 +165,7 @@ const CreateOrder = () => {
     const fetchMenuItems = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:5030/order/restaurant/${selectedRestaurant}/menu`, {
+        const response = await axios.get(`http://localhost:8000/order/restaurant/${selectedRestaurant}/menu`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log('Fetched menu items:', response.data);
@@ -272,7 +272,7 @@ const CreateOrder = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5080/payment/create-payment-intent',
+        'http://localhost:8000/payment/create-payment-intent',
         {
           amount: newOrderData.total * 100, // Convert to cents
           currency: 'usd',
@@ -298,7 +298,7 @@ const CreateOrder = () => {
     try {
       const token = localStorage.getItem('token');
       const orderResponse = await axios.post(
-        'http://localhost:5030/order/create',
+        'http://localhost:8000/order/create',
         {
           restaurantId: orderData.restaurantId,
           items: orderData.items,
@@ -309,7 +309,7 @@ const CreateOrder = () => {
       );
 
       await axios.post(
-        `http://localhost:5080/payment/update/${paymentIntentId}`,
+        `http://localhost:8000/payment/update/${paymentIntentId}`,
         { orderId: orderResponse.data.order._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );

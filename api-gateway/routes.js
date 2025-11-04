@@ -1,27 +1,59 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-function makeProxy(target, opts = {}) {
-  const timeout = parseInt(process.env.PROXY_TIMEOUT || '8000', 10);
-  return createProxyMiddleware({
-    target,
+function mountRoutes(app) {
+  console.log('🔗 Mounting service routes...');
+
+  app.use('/auth', createProxyMiddleware({
+    target: 'http://auth-service:5001',
     changeOrigin: true,
-    proxyTimeout: timeout,
-    onProxyReq: (proxyReq, req) => {
-      if (req.headers.authorization) {
-        proxyReq.setHeader('Authorization', req.headers.authorization);
+    pathRewrite: { '^/auth': '' },
+    onProxyReq: (proxyReq, req, res) => {
+      // Nếu body đã parse (trường hợp nào đó), ta ghi lại
+      if (req.body && Object.keys(req.body).length) {
+        console.log(`🚀 [Gateway] Forwarding ${req.method} ${req.originalUrl} → auth-service`);
+        const bodyData = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Type', 'application/json');
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+        proxyReq.write(bodyData);
       }
     },
-    ...opts
-  });
-}
+    logLevel: 'debug'
+  }));
+  // ✅ ADMIN stats → order-service
+  app.use('/admin/stats', createProxyMiddleware({
+    target: 'http://order-service:5003',
+    changeOrigin: true,
+    pathRewrite: { '^/admin': '/admin' },
+    logLevel: 'debug',
+  }));
 
-function mountRoutes(app, mw) {
-  app.use('/auth', mw.authLimiter, makeProxy(process.env.AUTH_SERVICE_URL));
-  app.use(['/restaurant', '/restaurants'], mw.publicLimiter,
-    makeProxy(process.env.RESTAURANT_SERVICE_URL));
-  app.use(['/order', '/orders'], mw.requireAuth, makeProxy(process.env.ORDER_SERVICE_URL));
-  app.use('/delivery', mw.requireAuth, makeProxy(process.env.DELIVERY_SERVICE_URL));
-  app.use('/payment', mw.requireAuth, makeProxy(process.env.PAYMENT_SERVICE_URL));
+  // ✅ ADMIN users/verify → auth-service
+  app.use('/admin', createProxyMiddleware({
+    target: 'http://auth-service:5001',
+    changeOrigin: true,
+    pathRewrite: { '^/admin': '/admin' },
+    logLevel: 'debug',
+  }));
+
+  app.use('/restaurant', createProxyMiddleware({
+    target: 'http://restaurant-service:5002',
+    changeOrigin: true
+  }));
+
+  app.use('/order', createProxyMiddleware({
+    target: 'http://order-service:5003',
+    changeOrigin: true
+  }));
+
+  app.use('/delivery', createProxyMiddleware({
+    target: 'http://delivery-service:5004',
+    changeOrigin: true
+  }));
+
+  app.use('/payment', createProxyMiddleware({
+    target: 'http://payment-service:5008',
+    changeOrigin: true
+  }));
 }
 
 module.exports = { mountRoutes };

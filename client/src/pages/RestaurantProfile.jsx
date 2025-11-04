@@ -16,7 +16,7 @@ const RestaurantProfile = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await axios.post('http://localhost:5020/restaurant/profile', 
+      const response = await axios.post('http://localhost:8000/restaurant/profile', 
         { name },
         { headers: { Authorization: `Bearer ${token}` } }
       );

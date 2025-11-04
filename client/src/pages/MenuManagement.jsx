@@ -47,7 +47,7 @@ const MenuManagement = () => {
         formData.append('image', image);
       }
 
-      const response = await axios.post('http://localhost:5020/restaurant/menu', formData, {
+      const response = await axios.post('http://localhost:8000/restaurant/menu', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

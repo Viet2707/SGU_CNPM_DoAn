@@ -16,7 +16,7 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5010/auth/register", form);
+      const res = await axios.post("http://localhost:8000/auth/register", form);
       toast.success(res.data.message);
       setTimeout(() => {
         window.location.href = "/login";

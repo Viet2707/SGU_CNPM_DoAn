@@ -18,7 +18,7 @@ export default function Login() {
     setLoading(true);
     
     try {
-    const res = await axios.post("http://localhost:5010/auth/login", form);
+    const res = await axios.post("http://localhost:8000/auth/login", form);
       const { token, role } = res.data;
       localStorage.setItem("token", token);
       const user = { role: role };

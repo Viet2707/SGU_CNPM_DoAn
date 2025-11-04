@@ -1,4 +1,5 @@
 version: "3.9"
+
 services:
   # 🧠 Authentication Service
   auth-service:
@@ -12,6 +13,8 @@ services:
       - JWT_SECRET=supersecret123
     depends_on:
       - mongo
+    networks:
+      - app-net     # ✅ thêm dòng này
     restart: always
 
   # 🍽️ Restaurant Service
@@ -29,6 +32,8 @@ services:
       - CLOUDINARY_API_SECRET=iCrDe5L2tClDf_6l1gwRmib6rEo
     depends_on:
       - mongo
+    networks:
+      - app-net     # ✅ thêm dòng này
     restart: always
 
   # 🧾 Order Service
@@ -49,6 +54,8 @@ services:
       - auth-service
       - restaurant-service
       - rabbitmq
+    networks:
+      - app-net     # ✅ thêm dòng này
     restart: always
 
   # 💸 Payment Service
@@ -65,6 +72,8 @@ services:
     depends_on:
       - mongo
       - rabbitmq
+    networks:
+      - app-net     # ✅ thêm dòng này
     restart: always
 
   # 🚚 Delivery Service
@@ -80,9 +89,11 @@ services:
     depends_on:
       - order-service
       - rabbitmq
+    networks:
+      - app-net     # ✅ thêm dòng này
     restart: always
 
-  # 🧩 API Gateway (NEW)
+  # 🧩 API Gateway
   api-gateway:
     build: ./api-gateway
     container_name: api-gateway
@@ -99,18 +110,18 @@ services:
       - app-net
     restart: always
 
-  # 🐇 RabbitMQ (for event-driven communication)
+  # 🐇 RabbitMQ
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # message broker port
-      - "15672:15672" # management dashboard (http://localhost:15672)
+      - "5672:5672"
+      - "15672:15672"   # http://localhost:15672 (guest/guest)
     networks:
       - app-net
     restart: always
 
-  # 🗄️ MongoDB (local dev only)
+  # 🗄️ MongoDB
   mongo:
     image: mongo
     container_name: mongo

@@ -19,7 +19,7 @@ const MenuItemsList = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5020/restaurant/menu', {
+      const response = await axios.get('http://localhost:8000/restaurant/menu', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -43,7 +43,7 @@ const MenuItemsList = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5020/restaurant/menu/${id}`, {
+      await axios.delete(`http://localhost:8000/restaurant/menu/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

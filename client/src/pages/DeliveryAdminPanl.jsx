@@ -10,7 +10,7 @@ const DeliveryAdminPanel = () => {
     const fetchOrders = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5040/delivery/orders', {
+        const response = await axios.get('http://localhost:8000/delivery/orders', {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log('Fetched orders:', response.data); // Debug: Log orders to check statuses
@@ -30,7 +30,7 @@ const DeliveryAdminPanel = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.patch(
-        `http://localhost:5040/delivery/order/${orderId}`,
+        `http://localhost:8000/delivery/order/${orderId}`,
         { status: 'in-transit' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -50,7 +50,7 @@ const DeliveryAdminPanel = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.patch(
-        `http://localhost:5040/delivery/order/${orderId}`,
+        `http://localhost:8000/delivery/order/${orderId}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
