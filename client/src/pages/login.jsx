@@ -91,21 +91,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="w-full flex items-center my-4">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-gray-500">or</span>
-          <div className="flex-grow border-t border-gray-300"></div>
-        </div>
-
-        {/* QR Code Login */}
-        <button className="w-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 py-3 rounded-lg font-semibold transition">
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z" />
-          </svg>
-          Log in with QR code
-        </button>
-
         {/* Terms Text */}
         <p className="text-xs text-gray-500 text-center mt-6">
           By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages,
