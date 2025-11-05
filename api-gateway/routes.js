@@ -61,6 +61,7 @@ function mountRoutes(app) {
     createProxyMiddleware({
       target: "http://order-service:5003",
       changeOrigin: true,
+      pathRewrite: { "^/order": "" }, // ✨ Thêm dòng này
     })
   );
 

@@ -11,14 +11,22 @@ app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
 
-// Import route admin
+// 🧩 Import routes
+const orderRoutes = require("./routes/order");
 const adminRoutes = require("./routes/admin");
+
+// 🧩 Mount routes
+app.use("/", orderRoutes); // ✨ thêm dòng này
 app.use("/admin", adminRoutes);
 
 // DB connect
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("Order DB connected"))
-  .catch(err => console.error("Order DB error:", err.message));
+  .catch((err) => console.error("Order DB error:", err.message));
 
 const PORT = process.env.PORT || 5003;
 app.listen(PORT, () => console.log(`Order Service running on port ${PORT}`));
