@@ -1,59 +1,84 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require("http-proxy-middleware");
 
 function mountRoutes(app) {
-  console.log('🔗 Mounting service routes...');
+  console.log("🔗 Mounting service routes...");
 
-  app.use('/auth', createProxyMiddleware({
-    target: 'http://auth-service:5001',
-    changeOrigin: true,
-    pathRewrite: { '^/auth': '' },
-    onProxyReq: (proxyReq, req, res) => {
-      // Nếu body đã parse (trường hợp nào đó), ta ghi lại
-      if (req.body && Object.keys(req.body).length) {
-        console.log(`🚀 [Gateway] Forwarding ${req.method} ${req.originalUrl} → auth-service`);
-        const bodyData = JSON.stringify(req.body);
-        proxyReq.setHeader('Content-Type', 'application/json');
-        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-        proxyReq.write(bodyData);
-      }
-    },
-    logLevel: 'debug'
-  }));
+  app.use(
+    "/auth",
+    createProxyMiddleware({
+      target: "http://auth-service:5001",
+      changeOrigin: true,
+      pathRewrite: { "^/auth": "" },
+      onProxyReq: (proxyReq, req, res) => {
+        // Nếu body đã parse (trường hợp nào đó), ta ghi lại
+        if (req.body && Object.keys(req.body).length) {
+          console.log(
+            `🚀 [Gateway] Forwarding ${req.method} ${req.originalUrl} → auth-service`
+          );
+          const bodyData = JSON.stringify(req.body);
+          proxyReq.setHeader("Content-Type", "application/json");
+          proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+          proxyReq.write(bodyData);
+        }
+      },
+      logLevel: "debug",
+    })
+  );
   // ✅ ADMIN stats → order-service
-  app.use('/admin/stats', createProxyMiddleware({
-    target: 'http://order-service:5003',
-    changeOrigin: true,
-    pathRewrite: { '^/admin': '/admin' },
-    logLevel: 'debug',
-  }));
+  app.use(
+    "/admin/stats",
+    createProxyMiddleware({
+      target: "http://order-service:5003",
+      changeOrigin: true,
+      pathRewrite: { "^/admin": "/admin" },
+      logLevel: "debug",
+    })
+  );
 
   // ✅ ADMIN users/verify → auth-service
-  app.use('/admin', createProxyMiddleware({
-    target: 'http://auth-service:5001',
-    changeOrigin: true,
-    pathRewrite: { '^/admin': '/admin' },
-    logLevel: 'debug',
-  }));
+  app.use(
+    "/admin",
+    createProxyMiddleware({
+      target: "http://auth-service:5001",
+      changeOrigin: true,
+      pathRewrite: { "^/admin": "/admin" },
+      logLevel: "debug",
+    })
+  );
 
-  app.use('/restaurant', createProxyMiddleware({
-    target: 'http://restaurant-service:5002',
-    changeOrigin: true
-  }));
+  app.use(
+    "/restaurant",
+    createProxyMiddleware({
+      target: "http://restaurant-service:5002",
+      changeOrigin: true,
+      pathRewrite: { "^/restaurant": "" }, // hoặc '' nếu service không có tiền tố /restaurant
+      logLevel: "debug",
+    })
+  );
 
-  app.use('/order', createProxyMiddleware({
-    target: 'http://order-service:5003',
-    changeOrigin: true
-  }));
+  app.use(
+    "/order",
+    createProxyMiddleware({
+      target: "http://order-service:5003",
+      changeOrigin: true,
+    })
+  );
 
-  app.use('/delivery', createProxyMiddleware({
-    target: 'http://delivery-service:5004',
-    changeOrigin: true
-  }));
+  app.use(
+    "/delivery",
+    createProxyMiddleware({
+      target: "http://delivery-service:5004",
+      changeOrigin: true,
+    })
+  );
 
-  app.use('/payment', createProxyMiddleware({
-    target: 'http://payment-service:5008',
-    changeOrigin: true
-  }));
+  app.use(
+    "/payment",
+    createProxyMiddleware({
+      target: "http://payment-service:5008",
+      changeOrigin: true,
+    })
+  );
 }
 
 module.exports = { mountRoutes };
