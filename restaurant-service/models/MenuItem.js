@@ -1,11 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const menuItemSchema = new mongoose.Schema({
+const MenuItemSchema = new mongoose.Schema({
   name: String,
   description: String,
   price: Number,
-  restaurantId: String,
   imageUrl: String,
+  restaurantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Restaurant",
+    required: true,
+  },
 });
 
-module.exports = mongoose.model('MenuItem', menuItemSchema);
+module.exports = mongoose.model("MenuItem", MenuItemSchema);

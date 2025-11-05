@@ -190,7 +190,7 @@ const CreateOrder = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          `http://localhost:8000/order/restaurant/${selectedRestaurant}/menu`,
+          `http://localhost:8000/restaurant/${selectedRestaurant}/menu`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
