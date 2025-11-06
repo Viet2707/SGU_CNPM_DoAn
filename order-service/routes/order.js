@@ -136,12 +136,23 @@ router.get(
   async (req, res) => {
     try {
       const restaurantRes = await axios.get(
-        "http://restaurant-service:5002/restaurant/api/restaurants-id",
+        "http://restaurant-service:5002/api/restaurants-id",
         { headers: { Authorization: req.headers.authorization } }
       );
 
-      const restaurantIds = restaurantRes.data.map((r) => r._id);
-      const orders = await Order.find({ restaurantId: { $in: restaurantIds } });
+      // ✅ Chuyển ObjectId -> string trước khi tìm
+      const restaurantIds = restaurantRes.data.map((r) =>
+        typeof r._id === "object" && r._id !== null && r._id.toString
+          ? r._id.toString()
+          : String(r._id)
+      );
+
+      console.log("Restaurant IDs for owner:", restaurantIds);
+
+      const orders = await Order.find({
+        restaurantId: { $in: restaurantIds },
+      });
+
       res.json(orders);
     } catch (err) {
       console.error("Error fetching restaurant orders:", err.message);

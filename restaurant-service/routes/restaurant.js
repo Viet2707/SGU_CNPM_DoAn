@@ -27,13 +27,11 @@ router.get("/api/restaurants", async (req, res) => {
 
 router.get("/api/restaurants-id", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    console.log("Logged-in user ID:", userId);
-
+    const userId = req.user.id; // ID của người sở hữu (restaurant owner)
     const restaurants = await Restaurant.find({ ownerId: userId });
     res.json(restaurants);
-  } catch (err) {
-    console.error("Error fetching restaurant IDs:", err.message);
+  } catch (error) {
+    console.error("Error fetching restaurant IDs:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
 });
