@@ -350,12 +350,15 @@ const CreateOrder = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      alert("✅ Payment successful! Your order has been placed.");
+
       clearCart();
       setShowPaymentModal(false);
       navigate("/orders");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to place order");
       console.error("Order error:", err);
+      alert("❌ Payment failed. Please try again.");
     } finally {
       setLoading(false);
     }
