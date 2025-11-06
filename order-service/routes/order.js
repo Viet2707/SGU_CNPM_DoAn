@@ -182,38 +182,7 @@ router.patch(
       order.deliveryPersonId = req.user.id;
 
     await order.save();
-
-    // 🔔 Notify customer
-    const fakeCustomerPhone = "+94761111222";
-    const fakeCustomerEmail = "jayaisurusamarakoon2@gmail.com";
-    try {
-      if (status === "accepted") {
-        await axios.post(`${NOTIFY_SERVICE_URL}/notify/email`, {
-          to: fakeCustomerEmail,
-          subject: "Your order has been accepted!",
-          text: "Your order is now being prepared and will be delivered soon.",
-        });
-      } else if (status === "in-transit") {
-        await axios.post(`${NOTIFY_SERVICE_URL}/notify/sms`, {
-          to: fakeCustomerPhone,
-          message: `🚴 Your delivery is on the way!`,
-        });
-      } else if (status === "delivered") {
-        await axios.post(`${NOTIFY_SERVICE_URL}/notify/email`, {
-          to: fakeCustomerEmail,
-          subject: "Order Delivered!",
-          text: "Your order has been delivered. Enjoy your meal!",
-        });
-        await axios.post(`${NOTIFY_SERVICE_URL}/notify/sms`, {
-          to: fakeCustomerPhone,
-          message: `📦 Your order has been delivered.`,
-        });
-      }
-    } catch (err) {
-      console.error("Failed to notify user:", err.message);
-    }
-
-    res.json({ message: "Order status updated successfully" });
+    res.json({ message: "Order status updated successfully", order });
   }
 );
 
@@ -222,33 +191,48 @@ router.patch(
 =========================== */
 
 // 🧾 All available or assigned orders
+// ✅ Delivery xem được các đơn hàng cần giao
 router.get(
-  "/delivery/orders",
+  "/order/delivery/orders",
+  verifyToken,
+  allowRoles("delivery"),
+  async (req, res) => {
+    try {
+      // Gộp 2 loại: đơn chờ giao (accepted) + đơn đang giao bởi người này
+      const orders = await Order.find({
+        $or: [
+          { status: "accepted" }, // nhà hàng đã xác nhận
+          { status: "in-transit", deliveryPersonId: req.user.id }, // đang giao
+        ],
+      });
+      res.json(orders);
+    } catch (err) {
+      console.error("Error fetching delivery orders:", err.message);
+      res.status(500).json({ message: "Error fetching delivery orders" });
+    }
+  }
+);
+
+// 🧾 All not delivered yet
+// 🧾 All not delivered yet
+// ✅ Endpoint cho Delivery hiển thị đơn hàng
+router.get(
+  "/order/delivery/all",
   verifyToken,
   allowRoles("delivery"),
   async (req, res) => {
     try {
       const orders = await Order.find({
         $or: [
-          { status: "in-transit", deliveryPersonId: req.user.id },
-          { status: "accepted" },
+          { status: "accepted" }, // đơn đã được nhà hàng xác nhận, chờ giao
+          { status: "in-transit", deliveryPersonId: req.user.id }, // đơn đang giao
         ],
       });
       res.json(orders);
-    } catch {
-      res.status(500).json({ message: "Failed to fetch delivery orders" });
+    } catch (err) {
+      console.error("Error fetching delivery all:", err.message);
+      res.status(500).json({ message: "Error fetching delivery all" });
     }
-  }
-);
-
-// 🧾 All not delivered yet
-router.get(
-  "/delivery/all",
-  verifyToken,
-  allowRoles("delivery"),
-  async (req, res) => {
-    const orders = await Order.find({ status: { $ne: "delivered" } });
-    res.json(orders);
   }
 );
 

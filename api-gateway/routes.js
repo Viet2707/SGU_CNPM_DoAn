@@ -70,6 +70,8 @@ function mountRoutes(app) {
     createProxyMiddleware({
       target: "http://delivery-service:5004",
       changeOrigin: true,
+      pathRewrite: { "^/delivery": "" }, // 💥 Thêm dòng này
+      logLevel: "debug",
     })
   );
 
