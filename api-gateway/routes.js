@@ -36,15 +36,15 @@ function mountRoutes(app) {
   );
 
   // ✅ ADMIN users/verify → auth-service
-  app.use(
-    "/admin",
-    createProxyMiddleware({
-      target: "http://auth-service:5001",
-      changeOrigin: true,
-      pathRewrite: { "^/admin": "/admin" },
-      logLevel: "debug",
-    })
-  );
+  // app.use(
+  //   "/admin",
+  //   createProxyMiddleware({
+  //     target: "http://auth-service:5001",
+  //     changeOrigin: true,
+  //     pathRewrite: { "^/admin": "/admin" },
+  //     logLevel: "debug",
+  //   })
+  // );
 
   app.use(
     "/restaurant",
