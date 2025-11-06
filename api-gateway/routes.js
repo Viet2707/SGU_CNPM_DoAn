@@ -73,11 +73,14 @@ function mountRoutes(app) {
     })
   );
 
+  // ✅ Payment Service
   app.use(
     "/payment",
     createProxyMiddleware({
-      target: "http://payment-service:5008",
+      target: "http://payment-service:5008", // port payment-service chạy trong Docker
       changeOrigin: true,
+      pathRewrite: { "^/payment": "" },
+      logLevel: "debug",
     })
   );
 }

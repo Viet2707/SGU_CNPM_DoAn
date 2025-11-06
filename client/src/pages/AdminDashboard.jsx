@@ -22,10 +22,18 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="p-6 text-black text-lg">Loading dashboard...</div>;
-  if (!stats) return <div className="p-6 text-black text-lg">No stats available.</div>;
+  if (loading)
+    return <div className="p-6 text-black text-lg">Loading dashboard...</div>;
+  if (!stats)
+    return <div className="p-6 text-black text-lg">No stats available.</div>;
 
-  const { totalOrders, totalRevenue, restaurantBreakdown, deliveryBreakdown, customerBreakdown } = stats;
+  const {
+    totalOrders,
+    totalRevenue,
+    restaurantBreakdown,
+    deliveryBreakdown,
+    customerBreakdown,
+  } = stats;
 
   return (
     <div className="p-6 space-y-8 text-black">
@@ -100,7 +108,10 @@ function BreakdownTable({ title, data = [], columns = [] }) {
           <thead className="bg-gray-100 text-black">
             <tr>
               {columns.map((col) => (
-                <th key={col.key} className="px-4 py-2 font-semibold border-b border-gray-300 text-left">
+                <th
+                  key={col.key}
+                  className="px-4 py-2 font-semibold border-b border-gray-300 text-left"
+                >
                   {col.label}
                 </th>
               ))}
@@ -111,7 +122,10 @@ function BreakdownTable({ title, data = [], columns = [] }) {
               data.map((item, i) => (
                 <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-2 border-b border-gray-200 text-black">
+                    <td
+                      key={col.key}
+                      className="px-4 py-2 border-b border-gray-200 text-black"
+                    >
                       {getNestedValue(item, col.key)}
                     </td>
                   ))}
@@ -119,7 +133,10 @@ function BreakdownTable({ title, data = [], columns = [] }) {
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="text-center py-4 text-gray-500">
+                <td
+                  colSpan={columns.length}
+                  className="text-center py-4 text-gray-500"
+                >
                   No data available
                 </td>
               </tr>

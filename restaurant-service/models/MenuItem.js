@@ -6,8 +6,7 @@ const MenuItemSchema = new mongoose.Schema({
   price: Number,
   imageUrl: String,
   restaurantId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Restaurant",
+    type: String, // ✅ đổi từ ObjectId -> String
     required: true,
   },
 });

@@ -43,25 +43,14 @@ router.get("/:restaurantId/menu", async (req, res) => {
     const { restaurantId } = req.params;
     console.log("📥 Fetching menu for restaurant:", restaurantId);
 
-    // Kiểm tra ID hợp lệ
-    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
-      return res.status(400).json({ message: "Invalid restaurant ID format" });
-    }
+    // Query trực tiếp bằng string
+    const menuItems = await MenuItem.find({ restaurantId: restaurantId });
 
-    // Tìm nhà hàng
-    const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant) {
-      return res.status(404).json({ message: "Restaurant not found" });
-    }
-
-    // Tìm menu của nhà hàng
-    const menuItems = await MenuItem.find({ restaurantId });
     console.log("✅ Found menu items:", menuItems);
-
     res.json(menuItems);
   } catch (err) {
-    console.error("❌ Error fetching menu:", err);
-    res.status(500).json({ message: err.message || "Internal server error" });
+    console.error("Error fetching menu items:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
