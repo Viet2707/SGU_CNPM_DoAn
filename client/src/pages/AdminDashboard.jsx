@@ -9,9 +9,27 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:8000/admin/stats", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Try API Gateway first, then fall back to known order-service ports
+        // try direct service ports first (avoid gateway 404 noise), then gateway
+        const urls = [
+          "http://localhost:5030/admin/stats",
+          "http://localhost:5003/admin/stats",
+          "http://localhost:8000/admin/stats",
+        ];
+        let res = null;
+        for (const url of urls) {
+          try {
+            res = await axios.get(url, {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 4000,
+            });
+            if (res && res.status === 200) break;
+          } catch (_err) {
+            // try next silently (we'll only log once all endpoints fail)
+            void _err;
+          }
+        }
+        if (!res) throw new Error("All stats endpoints failed");
         setStats(res.data);
       } catch (err) {
         console.error("Admin stats error:", err);
@@ -30,9 +48,9 @@ export default function AdminDashboard() {
   const {
     totalOrders,
     totalRevenue,
-    restaurantBreakdown,
-    deliveryBreakdown,
-    customerBreakdown,
+    restaurantAgg: restaurantBreakdown,
+    deliveryAgg: deliveryBreakdown,
+    customerAgg: customerBreakdown,
   } = stats;
 
   return (

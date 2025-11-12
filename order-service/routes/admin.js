@@ -4,8 +4,13 @@ const Order = require("../models/Order");
 const { verifyToken, allowRoles } = require("../utils/authMiddleware");
 const axios = require("axios");
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
-const RESTAURANT_SERVICE_URL = process.env.RESTAURANT_SERVICE_URL || "http://restaurant-service:5002";
+const AUTH_SERVICE_URL =
+  process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+const RESTAURANT_SERVICE_URL =
+  process.env.RESTAURANT_SERVICE_URL || "http://restaurant-service:5002";
+
+// Create axios instance with timeout for internal calls to avoid long hangs
+const http = axios.create({ timeout: 3000 });
 
 /**
  * GET /admin/stats
@@ -14,70 +19,40 @@ const RESTAURANT_SERVICE_URL = process.env.RESTAURANT_SERVICE_URL || "http://res
  * - Breakdown theo restaurant, delivery, customer
  * - Doanh thu chia tỉ lệ (80/15/5)
  */
+// ✅ Admin thống kê tổng hợp
 router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
-    // ✅ 1. Tổng đơn
+    // totalOrders: count all orders (so totals match breakdowns which are across all statuses)
     const totalOrders = await Order.countDocuments();
-
-    // ✅ 2. Tổng doanh thu (chỉ đơn delivered)
-    const revenueAgg = await Order.aggregate([
-      { $match: { status: "delivered" } },
-      { $group: { _id: null, totalRevenue: { $sum: { $ifNull: ["$total", 0] } } } },
+    const totalRevenueAgg = await Order.aggregate([
+      { $group: { _id: null, total: { $sum: "$total" } } },
     ]);
-    const totalRevenue = revenueAgg?.[0]?.totalRevenue || 0;
+    const totalRevenue = totalRevenueAgg[0]?.total || 0;
 
-    // ✅ 3. Thêm trường chia tiền (80/15/5)
-    const COMMISSION = { restaurant: 0.8, delivery: 0.15, platform: 0.05 };
-
-    // ✅ 4. Breakdown theo nhà hàng
+    // Thống kê theo nhà hàng (tất cả đơn)
     const restaurantAgg = await Order.aggregate([
-      { $match: { status: "delivered" } },
       {
         $group: {
           _id: "$restaurantId",
           orders: { $sum: 1 },
-          total: { $sum: "$total" },
-        },
-      },
-      {
-        $project: {
-          restaurantId: "$_id",
-          _id: 0,
-          orders: 1,
-          revenue: "$total",
-          restaurantShare: { $multiply: ["$total", COMMISSION.restaurant] },
-          deliveryShare: { $multiply: ["$total", COMMISSION.delivery] },
-          platformShare: { $multiply: ["$total", COMMISSION.platform] },
+          revenue: { $sum: "$total" },
         },
       },
     ]);
 
-    // ✅ 5. Breakdown theo người giao hàng
+    // Thống kê theo tài xế (tất cả đơn)
     const deliveryAgg = await Order.aggregate([
-      { $match: { status: "delivered" } },
       {
         $group: {
           _id: "$deliveryPersonId",
           orders: { $sum: 1 },
-          total: { $sum: "$total" },
-        },
-      },
-      {
-        $project: {
-          deliveryPersonId: "$_id",
-          _id: 0,
-          orders: 1,
-          revenue: "$total",
-          restaurantShare: { $multiply: ["$total", COMMISSION.restaurant] },
-          deliveryShare: { $multiply: ["$total", COMMISSION.delivery] },
-          platformShare: { $multiply: ["$total", COMMISSION.platform] },
+          revenue: { $sum: "$total" },
         },
       },
     ]);
 
-    // ✅ 6. Breakdown theo khách hàng
+    // Thống kê theo khách hàng (tất cả đơn)
     const customerAgg = await Order.aggregate([
-      { $match: { status: "delivered" } },
       {
         $group: {
           _id: "$customerId",
@@ -85,93 +60,94 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
           totalSpent: { $sum: "$total" },
         },
       },
-      { $sort: { totalSpent: -1 } },
     ]);
 
-    // ✅ 7. Enrich dữ liệu từ auth-service (name, email)
-   let userMap = {};
-try {
-  const r = await axios.get(`${AUTH_SERVICE_URL}/auth/users`, {
-    headers: { Authorization: req.headers.authorization || "" },
-    timeout: 5000,
-  });
-
-  if (Array.isArray(r.data)) {
-    for (const u of r.data) {
-      if (u?._id) {
-        userMap[String(u._id)] = {
-          name: u.username || u.name || u.email || "User",
-          email: u.email || "N/A",
-          role: u.role || "unknown",
-        };
-      }
-    }
-  }
-} catch (e) {
-  console.warn("⚠️ Enrich user info failed:", e.message);
-}
-
-    // ✅ 8. Enrich tên nhà hàng (tùy chọn)
-    let restaurantMap = {};
+    // Lấy tên nhà hàng (nội bộ) - note: restaurant-service exposes /api/restaurants
+    let restaurantNames = {};
     try {
-      const r = await axios.get(`${RESTAURANT_SERVICE_URL}/restaurant/api/restaurants`, {
-        headers: { Authorization: req.headers.authorization || "" },
-        timeout: 4000,
-      });
-      if (Array.isArray(r.data)) {
-        for (const rest of r.data) {
-          if (rest?._id) restaurantMap[String(rest._id)] = rest.name || "Restaurant";
-        }
+      const resp = await http.get(`${RESTAURANT_SERVICE_URL}/api/restaurants`);
+      if (Array.isArray(resp.data)) {
+        resp.data.forEach((r) => {
+          restaurantNames[r._id || r._id?.toString()] =
+            r.name || r.restaurantName || r.name;
+        });
       }
     } catch (e) {
-      console.warn("⚠️ Enrich restaurant failed:", e.message);
+      console.warn("Warning: failed to fetch restaurant names:", e.message);
     }
 
-    // ✅ 9. Gắn thông tin enrich
+    // Lấy tên tài xế và khách hàng từ auth-service
+    async function getUserNames(ids) {
+      if (!ids.length) return {};
+      try {
+        // call auth service internal endpoint
+        const resp = await http.post(
+          `${AUTH_SERVICE_URL}/admin/users/bulk-info`,
+          { ids }
+        );
+        // resp.data: [{ _id, name, email, role }]
+        const map = {};
+        resp.data.forEach((u) => {
+          map[u._id] = u;
+        });
+        return map;
+      } catch (e) {
+        return {};
+      }
+    }
+
+    const deliveryIds = deliveryAgg.map((d) => d._id).filter(Boolean);
+    const customerIds = customerAgg.map((c) => c._id).filter(Boolean);
+    const deliveryUsers = await getUserNames(deliveryIds);
+    const customerUsers = await getUserNames(customerIds);
+
+    // Tính shares
+    function calcShares(total) {
+      return {
+        restaurant: Math.round(total * 0.8),
+        delivery: Math.round(total * 0.15),
+        platform: Math.round(total * 0.05),
+      };
+    }
+
+    // Chuẩn hóa dữ liệu trả về cho frontend
     const restaurantBreakdown = restaurantAgg.map((r) => ({
-      restaurantId: r.restaurantId,
-      restaurantName: restaurantMap[r.restaurantId] || "Unknown Restaurant",
+      restaurantName: restaurantNames[r._id] || r._id,
       orders: r.orders,
       revenue: r.revenue,
-      shares: {
-        restaurant: r.restaurantShare,
-        delivery: r.deliveryShare,
-        platform: r.platformShare,
-      },
+      shares: calcShares(r.revenue),
     }));
 
-    const deliveryBreakdown = deliveryAgg.map((d) => ({
-      deliveryPersonId: d.deliveryPersonId,
-      deliveryName: userMap[d.deliveryPersonId]?.name || "Unknown Delivery",
-      orders: d.orders,
-      revenue: d.revenue,
-      shares: {
-        restaurant: d.restaurantShare,
-        delivery: d.deliveryShare,
-        platform: d.platformShare,
-      },
-    }));
+    const deliveryBreakdown = deliveryAgg.map((d) => {
+      const idKey = d._id || "unassigned";
+      return {
+        deliveryId: idKey,
+        deliveryName:
+          deliveryUsers[d._id]?.name || (d._id ? d._id : "Unassigned"),
+        orders: d.orders,
+        revenue: d.revenue,
+        shares: calcShares(d.revenue),
+      };
+    });
 
     const customerBreakdown = customerAgg.map((c) => ({
-      customerId: c._id,
-      customerName: userMap[c._id]?.name || "Unknown Customer",
-      email: userMap[c._id]?.email || "N/A",
+      // show the id as the 'name' column and the email if available
+      customerName: c._id,
+      email: customerUsers[c._id]?.email || "-",
       orders: c.orders,
       totalSpent: c.totalSpent,
     }));
 
-    // ✅ 10. Trả kết quả tổng hợp
     res.json({
       totalOrders,
       totalRevenue,
-      commissionRate: COMMISSION,
-      restaurantBreakdown,
-      deliveryBreakdown,
-      customerBreakdown,
+      restaurantAgg: restaurantBreakdown,
+      deliveryAgg: deliveryBreakdown,
+      customerAgg: customerBreakdown,
     });
   } catch (err) {
-    console.error("Admin stats error:", err.message);
-    res.status(500).json({ message: "Failed to fetch admin stats", error: err.message });
+    console.error("Error fetching admin stats:", err.message);
+    res.status(500).json({ message: "Failed to fetch admin stats" });
   }
 });
 

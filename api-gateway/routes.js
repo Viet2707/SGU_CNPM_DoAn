@@ -26,12 +26,13 @@ function mountRoutes(app) {
   );
   // ✅ ADMIN stats → order-service
   app.use(
-    "/admin/stats",
+    "/admin",
     createProxyMiddleware({
       target: "http://order-service:5003",
       changeOrigin: true,
-      pathRewrite: { "^/admin": "/admin" },
       logLevel: "debug",
+      proxyTimeout: Number(process.env.PROXY_TIMEOUT) || 8000,
+      timeout: Number(process.env.PROXY_TIMEOUT) || 8000,
     })
   );
 

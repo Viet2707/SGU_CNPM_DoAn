@@ -11,6 +11,17 @@ app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
 
+// Debug: log incoming requests and whether an Authorization header exists.
+// This helps diagnose why some requests are being rejected before the
+// admin handler runs.
+app.use((req, res, next) => {
+  console.log(
+    `[Incoming] ${req.method} ${req.path} authHeader=${!!req.headers
+      .authorization}`
+  );
+  next();
+});
+
 // 🧩 Import routes
 const orderRoutes = require("./routes/order");
 const adminRoutes = require("./routes/admin");

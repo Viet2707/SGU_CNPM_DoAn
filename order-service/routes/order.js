@@ -239,54 +239,9 @@ router.get(
 /* ===========================
    🧑‍💼 ADMIN ROUTES
 =========================== */
-
-// 📊 Admin: overall stats
-router.get(
-  "/admin/stats",
-  verifyToken,
-  allowRoles("admin"),
-  async (req, res) => {
-    try {
-      // Check connection state
-      if (!Order.db || Order.db.readyState !== 1) {
-        return res.status(500).json({ message: "Database not connected" });
-      }
-
-      const totalOrders = await Order.countDocuments();
-      const deliveredOrders = await Order.countDocuments({
-        status: "delivered",
-      });
-      const pendingOrders = await Order.countDocuments({ status: "pending" });
-
-      // Aggregate total revenue
-      const revenueResult = await Order.aggregate([
-        { $match: { status: "delivered" } },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: { $ifNull: ["$total", 0] } },
-          },
-        },
-      ]).catch((err) => {
-        console.error("Revenue aggregation failed:", err.message);
-        return [];
-      });
-
-      const totalRevenue = revenueResult?.[0]?.totalRevenue || 0;
-
-      res.json({
-        orders: totalOrders || 0,
-        delivered: deliveredOrders || 0,
-        pending: pendingOrders || 0,
-        revenue: totalRevenue,
-      });
-    } catch (err) {
-      console.error("Admin stats error:", err.message);
-      res
-        .status(500)
-        .json({ message: "Failed to fetch admin stats", error: err.message });
-    }
-  }
-);
+// NOTE: admin routes (including `/admin/stats`) are implemented in
+// `routes/admin.js`. We remove the duplicate implementation here to
+// avoid route conflicts so that the dedicated admin router handles
+// authentication/enrichment consistently.
 
 module.exports = router;
