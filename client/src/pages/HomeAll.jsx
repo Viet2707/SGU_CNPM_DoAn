@@ -104,11 +104,11 @@ const HomeAll = () => {
   };
 
   // Filter for popular items (we'll consider items with lower prices as popular for demonstration)
-  const getPopularItems = () => {
-    return [...menuItems]
-      .sort((a, b) => a.price - b.price)
-      .slice(0, 3);
-  };
+  // const getPopularItems = () => {
+  //   return [...menuItems]
+  //     .sort((a, b) => a.price - b.price)
+  //     .slice(0, 3);
+  // };
 
   return (
     <div className="min-h-screen bg-white text-black flex flex-col">
@@ -165,7 +165,7 @@ const HomeAll = () => {
                 onClick={() => navigate('/create-order')}
                 className="flex items-center text-black px-3 py-2"
               >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 Cart
@@ -249,7 +249,7 @@ const HomeAll = () => {
                     <div
                       key={`search-${item._id}`}
                       className="rounded-lg overflow-hidden shadow hover:shadow-md transition duration-200 cursor-pointer"
-                      onClick={() => navigate(`/menu-item/${item._id}`)}
+                      // onClick={() => navigate(`/menu-item/${item._id}`)}
                     >
                       <div className="relative">
                         {item.imageUrl ? (
@@ -339,7 +339,7 @@ const HomeAll = () => {
                       <div
                         key={`special-${item._id}`}
                         className="rounded-lg overflow-hidden shadow hover:shadow-md transition duration-200 relative cursor-pointer"
-                        onClick={() => navigate(`/menu-item/${item._id}`)}
+                        // onClick={() => navigate(`/menu-item/${item._id}`)}
                       >
                         <div className="relative">
                           {item.imageUrl ? (
@@ -348,7 +348,7 @@ const HomeAll = () => {
                               alt={item.name}
                               className="w-full h-48 object-cover"
                               onError={(e) => {
-                                e.target.src = 'https://via.placeholder.com/150?text=No+Image';
+                                e.target.src = '';
                               }}
                             />
                           ) : (

@@ -12,9 +12,8 @@ export default function AdminDashboard() {
         // Try API Gateway first, then fall back to known order-service ports
         // try direct service ports first (avoid gateway 404 noise), then gateway
         const urls = [
-          "http://localhost:5030/admin/stats",
-          "http://localhost:5003/admin/stats",
-          "http://localhost:8000/admin/stats",
+         
+          "http://localhost:8000/order/admin/stats",
         ];
         let res = null;
         for (const url of urls) {
