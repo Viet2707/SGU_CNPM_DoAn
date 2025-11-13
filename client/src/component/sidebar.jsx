@@ -26,6 +26,7 @@ const Sidebar = ({ user }) => {
   const isRestaurant = role === 'restaurant';
   const isCustomer = role === 'customer';
   const isDelivery = role === 'delivery';
+  const isAdmin = role === 'admin';
   
   // Check if a route is active
   const isActive = (path) => location.pathname === path;
@@ -54,8 +55,8 @@ const Sidebar = ({ user }) => {
               <Coffee className="text-black" size={isOpen || window.innerWidth >= 1024 ? 24 : 20} />
             </div>
             <h1 className={`ml-2 font-bold text-xl ${!isOpen && window.innerWidth < 1024 ? 'hidden' : 'block'}`}>
-            <span className="text-white">Eat</span>
-            <span className="text-green-500">zaa</span>
+              <span className="text-white">Fast</span>
+              <span className="text-green-500">food</span>
             </h1>
           </div>
         </div>
@@ -64,14 +65,20 @@ const Sidebar = ({ user }) => {
         <nav className="p-4">
           <ul className="space-y-2">
             <li>
-              <Link 
-                to="/home"
-                className={`flex items-center p-3 rounded-md transition-colors duration-200
-                           ${isActive('/home') ? 'bg-yellow-500 text-black' : 'hover:bg-gray-800'}`}
-              >
-                <Home size={20} />
-                <span className={`ml-3 ${!isOpen && window.innerWidth < 1024 ? 'hidden' : 'block'}`}>Home</span>
-              </Link>
+              {isRestaurant || isDelivery || isAdmin ? (
+                <div className={`flex items-center p-3 rounded-md transition-colors duration-200 text-gray-300 cursor-default`}>
+                  <Home size={20} />
+                  <span className={`ml-3 ${!isOpen && window.innerWidth < 1024 ? 'hidden' : 'block'}`}>Home</span>
+                </div>
+              ) : (
+                <Link
+                  to="/home"
+                  className={`flex items-center p-3 rounded-md transition-colors duration-200 ${isActive('/home') ? 'bg-yellow-500 text-black' : 'hover:bg-gray-800'}`}
+                >
+                  <Home size={20} />
+                  <span className={`ml-3 ${!isOpen && window.innerWidth < 1024 ? 'hidden' : 'block'}`}>Home</span>
+                </Link>
+              )}
             </li>
             
             {/* Restaurant Links */}
@@ -80,8 +87,7 @@ const Sidebar = ({ user }) => {
                 <li>
                   <Link 
                     to="/restaurant/profile"
-                    className={`flex items-center p-3 rounded-md transition-colors duration-200
-                               ${isActive('/restaurant/profile') ? ' Bg-yellow-500 text-black' : 'hover:bg-gray-800'}`}
+                    className={`flex items-center p-3 rounded-md transition-colors duration-200 ${isActive('/restaurant/profile') ? 'bg-yellow-500 text-black' : 'hover:bg-gray-800'}`}
                   >
                     <User size={20} />
                     <span className={`ml-3 ${!isOpen && window.innerWidth < 1024 ? 'hidden' : 'block'}`}>Restaurant Profile</span>
