@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../styles/theme.css';
 
 const MenuManagement = () => {
   const [menuItem, setMenuItem] = useState({
@@ -72,23 +73,16 @@ const MenuManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <header className="bg-yellow-500 text-black p-4 shadow-md">
+    <div className="app-root">
+      <header className="header">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
-          <h1 className="text-2xl font-bold mb-4 md:mb-0">FoodDelivery</h1>
-          <nav className="flex flex-wrap gap-2">
-            <button
-              onClick={() => navigate('/restaurant/menu')}
-              className="px-4 py-2 text-black font-medium hover:underline"
-            >
-              View Menu
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="px-4 py-2 text-black font-medium hover:underline"
-            >
-              Home
-            </button>
+          <h1 className="brand" onClick={() => navigate('/')}>
+            <span className="brand-main">Fast</span>
+            <span className="brand-accent">food</span>
+          </h1>
+          <nav className="actions">
+            <button onClick={() => navigate('/restaurant/menu')} className="px-4 py-2 hover:underline">View Menu</button>
+            <button onClick={() => navigate('/')} className="px-4 py-2 hover:underline">Home</button>
           </nav>
         </div>
       </header>
@@ -120,7 +114,7 @@ const MenuManagement = () => {
                 name="name"
                 value={menuItem.name}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
                 placeholder="e.g. Margherita Pizza"
               />
@@ -136,7 +130,7 @@ const MenuManagement = () => {
                 value={menuItem.description}
                 onChange={handleChange}
                 rows="3"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
                 placeholder="Describe your dish"
               ></textarea>
@@ -154,7 +148,7 @@ const MenuManagement = () => {
                 onChange={handleChange}
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
                 placeholder="9.99"
               />
@@ -170,7 +164,7 @@ const MenuManagement = () => {
                 name="image"
                 accept="image/jpeg,image/jpg,image/png"
                 onChange={handleImageChange}
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               {imagePreview && (
                 <div className="mt-4">
@@ -186,16 +180,15 @@ const MenuManagement = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 px-4 rounded font-medium bg-yellow-500 text-black hover:bg-yellow-600 transition duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`w-full py-3 px-4 rounded font-medium btn-add ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {loading ? 'Adding...' : 'Add Menu Item'}
             </button>
           </form>
         </div>
       </main>
-
-      <footer className="bg-gray-900 text-white text-center py-4">
-        <p>© {new Date().getFullYear()} FoodDelivery. All rights reserved.</p>
+      <footer className="footer">
+        <p>© {new Date().getFullYear()} Fastfood. All rights reserved.</p>
       </footer>
     </div>
   );

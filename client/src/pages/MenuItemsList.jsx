@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../styles/theme.css';
 
 const MenuItemsList = () => {
   const [menuItems, setMenuItems] = useState([]);
@@ -57,27 +58,20 @@ const MenuItemsList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <header className="bg-yellow-500 text-black p-4 shadow-md">
+    <div className="app-root">
+      <header className="header">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
-          <h1 className="text-2xl font-bold mb-4 md:mb-0">FoodDelivery</h1>
-          <nav className="flex flex-wrap gap-2">
-            <button 
-              onClick={() => navigate('/restaurant/menu/add')} 
-              className="px-4 py-2 bg-black text-white font-medium rounded hover:bg-gray-800 transition duration-200"
-            >
-              Add Menu Item
-            </button>
-            <button 
-              onClick={() => navigate('/home')} 
-              className="px-4 py-2 text-black font-medium hover:underline"
-            >
-              Home
-            </button>
+          <h1 className="brand" onClick={() => navigate('/')}>
+            <span className="brand-main">Fast</span>
+            <span className="brand-accent">food</span>
+          </h1>
+          <nav className="actions">
+            <button onClick={() => navigate('/restaurant/menu/add')} className="btn-add">Add Menu Item</button>
+            <button onClick={() => navigate('/home')} className="px-4 py-2 hover:underline">Home</button>
           </nav>
         </div>
       </header>
-      
+
       <main className="flex-1 container mx-auto px-4 py-8 md:py-16">
         <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Your Menu Items</h2>
         
@@ -89,18 +83,13 @@ const MenuItemsList = () => {
         
         {loading ? (
           <div className="text-center py-8">
-            <div className="w-12 h-12 rounded-full border-4 border-yellow-500 border-t-transparent animate-spin mx-auto"></div>
+            <div className="w-12 h-12 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto"></div>
             <p className="mt-4 text-gray-400">Loading menu items...</p>
           </div>
         ) : menuItems.length === 0 ? (
           <div className="text-center py-8 bg-gray-900 rounded-lg max-w-xl mx-auto">
             <p className="text-xl mb-4">You haven't added any menu items yet.</p>
-            <button 
-              onClick={() => navigate('/restaurant/menu/add')} 
-              className="px-6 py-3 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-600 transition duration-200"
-            >
-              Add Your First Item
-            </button>
+            <button onClick={() => navigate('/restaurant/menu/add')} className="btn-add">Add Your First Item</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -128,7 +117,7 @@ const MenuItemsList = () => {
                   <h3 className="text-xl font-bold mb-2">{item.name}</h3>
                   <p className="text-gray-400 mb-4">{item.description}</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-yellow-500 font-bold text-xl">${item.price.toFixed(2)}</span>
+                    <span className="price">${item.price.toFixed(2)}</span>
                     <button
                       onClick={() => handleDelete(item._id)}
                       disabled={deleteLoading === item._id}
@@ -143,9 +132,8 @@ const MenuItemsList = () => {
           </div>
         )}
       </main>
-      
-      <footer className="bg-gray-900 text-white text-center py-4 mt-8">
-        <p>© {new Date().getFullYear()} FoodDelivery. All rights reserved.</p>
+      <footer className="footer">
+        <p>© {new Date().getFullYear()} Fastfood. All rights reserved.</p>
       </footer>
     </div>
   );
