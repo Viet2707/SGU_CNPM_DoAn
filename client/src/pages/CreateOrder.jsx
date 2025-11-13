@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CartContext } from "../CartContext";
+import '../styles/CreateOrder.css';
 import {
   Elements,
   PaymentElement,
@@ -20,6 +21,7 @@ const CheckoutForm = ({
   setLoading,
   selectedPaymentMethod,
   billingDetails,
+  clientSecret,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -84,7 +86,7 @@ const CheckoutForm = ({
         <button
           type="submit"
           disabled={!stripe || (!elements && !selectedPaymentMethod)}
-          className="w-full py-3 mt-4 rounded bg-yellow-500 text-black hover:bg-yellow-600 disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full py-3 mt-4 rounded bg-green-500 text-white hover:bg-green-600 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           Pay Now
         </button>
@@ -377,13 +379,13 @@ const CreateOrder = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      <header className="bg-yellow-500 text-black p-4 shadow-md">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
-          <h1 className="text-2xl font-bold mb-4 md:mb-0">FoodDelivery</h1>
+      <header className="create-order-header">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center px-4">
+          <h1>🍔 Fastfood</h1>
           <nav className="flex flex-wrap gap-2">
             <button
               onClick={() => navigate("/home")}
-              className="px-4 py-2 text-black font-medium hover:underline"
+              className="px-4 py-2 text-white font-medium hover:underline"
             >
               Home
             </button>
@@ -391,22 +393,22 @@ const CreateOrder = () => {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 py-8 md:py-16">
-        <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">
+      <main className="create-order-main">
+        <h2 className="create-order-title">
           Create Order
         </h2>
 
         {error && (
-          <div className="bg-red-500 text-white p-3 rounded mb-4">{error}</div>
+          <div className="error-alert">{error}</div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 bg-gray-900 rounded-lg shadow-lg p-6">
-            <h3 className="text-xl font-bold mb-4">Select Restaurant</h3>
+        <div className="create-order-grid">
+          <div className="order-card">
+            <h3>Select Restaurant</h3>
             <select
               value={selectedRestaurant}
               onChange={(e) => setSelectedRestaurant(e.target.value)}
-              className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              className="form-select"
             >
               <option value="">-- Select a Restaurant --</option>
               {restaurants.map((restaurant) => (
@@ -418,29 +420,29 @@ const CreateOrder = () => {
           </div>
 
           <div className="lg:col-span-2">
-            <h3 className="text-xl font-bold mb-4">Menu Items</h3>
+            <h3 style={{marginBottom: '1rem'}}>Menu Items</h3>
             {selectedRestaurant ? (
               menuItems.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="menu-grid">
                   {menuItems.map((item) => (
                     <div
                       key={item._id}
-                      className="bg-gray-900 rounded-lg p-4 flex justify-between"
+                      className="menu-item-card"
                     >
                       <div>
-                        <h4 className="font-bold">{item.name}</h4>
-                        <p className="text-gray-400 text-sm">
+                        <h4 className="menu-item-name">{item.name}</h4>
+                        <p className="menu-item-description">
                           {item.description}
                         </p>
-                        <p className="text-yellow-500 mt-2">
+                        <p className="menu-item-price">
                           ${item.price.toFixed(2)}
                         </p>
                       </div>
                       <button
                         onClick={() => addToCart(item)}
-                        className="bg-yellow-500 text-black px-3 py-1 rounded self-center hover:bg-yellow-600"
+                        className="btn btn-primary"
                       >
-                        Add
+                        Add to Cart
                       </button>
                     </div>
                   ))}
@@ -458,11 +460,11 @@ const CreateOrder = () => {
           </div>
         </div>
 
-        <div className="mt-8 bg-gray-900 rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold mb-4">Delivery Location</h3>
-          <div className="flex flex-col md:flex-row items-start gap-4">
-            <div className="flex-1 w-full">
-              <label className="block text-gray-400 mb-2">
+        <div className="order-card">
+          <h3>Delivery Location</h3>
+          <div className="delivery-section">
+            <div className="delivery-input-wrapper">
+              <label className="form-label">
                 Delivery Address
               </label>
               <input
@@ -476,7 +478,7 @@ const CreateOrder = () => {
                   }));
                 }}
                 placeholder="Enter your delivery address"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <button
@@ -515,7 +517,7 @@ const CreateOrder = () => {
                   }))
                 }
                 placeholder="Enter your full name"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border/concepts/dependency-management.md-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
@@ -530,7 +532,7 @@ const CreateOrder = () => {
                   }))
                 }
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
@@ -545,7 +547,7 @@ const CreateOrder = () => {
                   }))
                 }
                 placeholder="Enter your city"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
@@ -560,7 +562,7 @@ const CreateOrder = () => {
                   }))
                 }
                 placeholder="Enter your state"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
@@ -575,7 +577,7 @@ const CreateOrder = () => {
                   }))
                 }
                 placeholder="Enter your postal code"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
@@ -590,7 +592,7 @@ const CreateOrder = () => {
                   }))
                 }
                 placeholder="Enter your country"
-                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
@@ -601,7 +603,7 @@ const CreateOrder = () => {
           {cart.length > 0 ? (
             <>
               {displayedCartItems.length === 0 && selectedRestaurant ? (
-                <p className="text-yellow-500 mb-4">
+                <p className="text-green-500 mb-4">
                   No items in the cart match the selected restaurant. Please add
                   items from this restaurant or change the selection.
                 </p>
@@ -642,7 +644,7 @@ const CreateOrder = () => {
               )}
               <div className="flex justify-between items-center font-bold text-lg mb-6">
                 <span>Total:</span>
-                <span className="text-yellow-500">
+                <span className="text-green-500">
                   ${calculateTotal().toFixed(2)}
                 </span>
               </div>
@@ -660,7 +662,7 @@ const CreateOrder = () => {
                   <select
                     value={selectedPaymentMethod}
                     onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                    className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="">Add new payment method</option>
                     {paymentMethods.map((pm) => (
@@ -678,7 +680,7 @@ const CreateOrder = () => {
                   displayedCartItems.length === 0 ||
                   !deliveryLocation
                 }
-                className={`w-full py-3 px-4 rounded font-medium bg-yellow-500 text-black hover:bg-yellow-600 transition duration-200 ${
+                className={`w-full py-3 px-4 rounded font-medium bg-green-500 text-white hover:bg-green-600 transition duration-200 ${
                   loading ||
                   displayedCartItems.length === 0 ||
                   !deliveryLocation
@@ -689,7 +691,7 @@ const CreateOrder = () => {
                 {loading ? "Processing..." : "Proceed to Payment"}
               </button>
               {!deliveryLocation && displayedCartItems.length > 0 && (
-                <p className="text-yellow-500 text-sm mt-2">
+                <p className="text-green-500 text-sm mt-2">
                   Please provide your delivery location to proceed.
                 </p>
               )}
@@ -717,6 +719,7 @@ const CreateOrder = () => {
                   setLoading={setLoading}
                   selectedPaymentMethod={selectedPaymentMethod}
                   billingDetails={billingDetails}
+                  clientSecret={clientSecret}
                 />
               </Elements>
             </div>
@@ -725,7 +728,7 @@ const CreateOrder = () => {
       </main>
 
       <footer className="bg-gray-900 text-white text-center py-4">
-        <p>© {new Date().getFullYear()} Eatzaa. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Fastfood. All rights reserved.</p>
       </footer>
     </div>
   );
