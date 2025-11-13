@@ -11,10 +11,7 @@ export default function AdminDashboard() {
         const token = localStorage.getItem("token");
         // Try API Gateway first, then fall back to known order-service ports
         // try direct service ports first (avoid gateway 404 noise), then gateway
-        const urls = [
-         
-          "http://localhost:8000/order/admin/stats",
-        ];
+        const urls = ["http://localhost:8000/order/admin/stats"];
         let res = null;
         for (const url of urls) {
           try {
@@ -81,7 +78,7 @@ export default function AdminDashboard() {
         title="🚚 By Delivery"
         data={deliveryBreakdown}
         columns={[
-          { key: "deliveryName", label: "Delivery" },
+          { key: "deliveryName", label: "DeliveryId" },
           { key: "orders", label: "Orders" },
           { key: "revenue", label: "Revenue" },
           { key: "shares.restaurant", label: "Restaurant Share" },
@@ -95,7 +92,7 @@ export default function AdminDashboard() {
         title="🧍‍♂️ By Customer"
         data={customerBreakdown}
         columns={[
-          { key: "customerName", label: "Customer" },
+          { key: "customerName", label: "CustomerId" },
           { key: "email", label: "Email" },
           { key: "orders", label: "Orders" },
           { key: "totalSpent", label: "Total Spent" },

@@ -133,7 +133,7 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
     const customerBreakdown = customerAgg.map((c) => ({
       // show the id as the 'name' column and the email if available
       customerName: c._id,
-      email: customerUsers[c._id]?.email || "-",
+      email: customerUsers[c._id]?.username || "-",
       orders: c.orders,
       totalSpent: c.totalSpent,
     }));

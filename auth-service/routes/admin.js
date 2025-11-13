@@ -26,13 +26,14 @@ router.get(
 router.post("/users/bulk-info", async (req, res) => {
   try {
     const { ids } = req.body;
-    if (!Array.isArray(ids))
-      return res.status(400).json({ message: "ids must be an array" });
-    const users = await User.find({ _id: { $in: ids } }, "_id name email role");
+
+    const users = await User.find({ _id: { $in: ids } }).select(
+      "_id username role"
+    );
+
     res.json(users);
   } catch (err) {
-    console.error("bulk-info error", err.message);
-    res.status(500).json({ message: "Failed to fetch users" });
+    res.status(500).json({ message: "bulk-info failed" });
   }
 });
 // Approve a restaurant (mock example – add status flag)

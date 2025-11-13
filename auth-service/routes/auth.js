@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { generateToken } = require("../utils/jwt");
-const { verifyToken, allowRoles } = require('../utils/jwt');
+const { verifyToken, allowRoles } = require("../utils/jwt");
 
 const router = express.Router();
 
@@ -46,6 +46,20 @@ router.get("/users", verifyToken, allowRoles("admin"), async (req, res) => {
   } catch (err) {
     console.error("Failed to fetch users:", err.message);
     res.status(500).json({ message: "Failed to fetch users" });
+  }
+});
+
+// 🔥 NEW: return info of multiple users
+router.post("/admin/users/bulk-info", async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    const users = await User.find({ _id: { $in: ids } }, "_id username role");
+
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Bulk user lookup failed" });
   }
 });
 
