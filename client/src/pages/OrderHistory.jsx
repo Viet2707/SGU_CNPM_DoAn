@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/OrderHistory.css';
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -44,15 +45,17 @@ const OrderHistory = () => {
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'pending':
-        return 'bg-blue-600 text-white';
+        return 'status-pending';
       case 'accepted':
-        return 'bg-yellow-500 text-black';
+        return 'status-accepted';
       case 'in-transit':
-        return 'bg-purple-600 text-white';
+        return 'status-in-transit';
       case 'delivered':
-        return 'bg-green-600 text-white';
+        return 'status-delivered';
+      case 'cancelled':
+        return 'status-cancelled';
       default:
-        return 'bg-gray-600 text-white';
+        return 'status-pending';
     }
   };
 
@@ -65,56 +68,72 @@ const OrderHistory = () => {
   };
 
   return (
-    <div className="py-8">
-      <h1 className="text-3xl font-bold mb-8">Your Orders</h1>
+    <div className="orders-container">
+      <div className="orders-header">
+        <h1 className="orders-title">Your Orders</h1>
+        <p className="orders-subtitle">Track and manage all your orders</p>
+      </div>
 
       {error && (
-        <div className="bg-red-500 text-white p-3 rounded mb-4">
+        <div className="error-alert">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full border-4 border-yellow-500 border-t-transparent animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading orders...</p>
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p className="loading-text">Loading your orders...</p>
         </div>
       ) : orders.length === 0 ? (
-        <div className="bg-gray-900 rounded-lg p-8 text-center">
-          <p className="text-xl">You don't have any orders yet.</p>
+        <div className="empty-state">
+          <p className="empty-state-text">📦 You don't have any orders yet</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="orders-grid">
           {orders.map(order => (
-            <div key={order._id} className="bg-gray-900 rounded-lg shadow-lg overflow-hidden">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">Order #{order._id.substring(order._id.length - 6)}</h3>
-                    <p className="text-gray-400 text-sm">
-                      {order.createdAt ? formatDate(order.createdAt) : 'Date not available'}
-                    </p>
+            <div key={order._id} className="order-card">
+              <div className="order-card-content">
+                <div className="order-header">
+                  <div className="order-info">
+                    <div>
+                      <h3 className="order-id">
+                        <span className="order-id-badge">#{order._id.substring(order._id.length - 6)}</span>
+                        Order Details
+                      </h3>
+                    </div>
+                    {order.createdAt && (
+                      <div className="order-date">
+                        {formatDate(order.createdAt)}
+                      </div>
+                    )}
                     {order.deliveryPersonId && (
-                      <p className="text-gray-400 text-sm">Assigned to Delivery ID: {order.deliveryPersonId}</p>
+                      <div className="order-delivery">
+                        Assigned to: {order.deliveryPersonId}
+                      </div>
                     )}
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeClass(order.status)}`}>
+                  <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-4">
+                <div className="order-items">
+                  <div className="order-items-title">Items Ordered</div>
                   {order.items.map((item, index) => (
-                    <div key={index} className="flex justify-between">
-                      <span>{item.quantity}x {item.name}</span>
-                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <div key={index} className="order-item">
+                      <div className="item-name">
+                        <span className="item-quantity">{item.quantity}x</span>
+                        <span>{item.name}</span>
+                      </div>
+                      <span className="item-price">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="border-t border-gray-800 pt-4 flex justify-between items-center font-bold">
-                  <span>Total</span>
-                  <span className="text-yellow-500">${order.total.toFixed(2)}</span>
+                <div className="order-total">
+                  <span className="total-label">Total Amount</span>
+                  <span className="total-amount">${order.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
