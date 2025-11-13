@@ -256,43 +256,24 @@ const HomeAll = () => {
                           <img
                             src={item.imageUrl}
                             alt={item.name}
-                            className="w-full h-48 object-cover"
+                            className="w-full h-32 object-cover"
                             onError={(e) => {
                               e.target.src = 'https://via.placeholder.com/150?text=No+Image';
                             }}
                           />
                         ) : (
-                          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                          <div className="w-full h-32 bg-gray-200 flex items-center justify-center">
                             <span className="text-gray-400">No Image</span>
                           </div>
                         )}
-                        <button 
-                          className="absolute top-3 right-3 bg-white rounded-full p-1 shadow"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Favorite functionality would go here
-                          }}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                        </button>
                       </div>
                       <div className="p-4">
                         <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <p className="text-gray-600 text-sm mb-1">
-                          $$ • {item.restaurantName} • {item.category || 'Various'}
+                        <p className="text-gray-600 text-sm mb-3">
+                          {item.restaurantName}
                         </p>
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center text-sm">
-                            <span className="flex items-center mr-2">
-                              <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              4.6
-                            </span>
-                            <span className="mr-2">20–35 min</span>
-                          </div>
+                          <span className="font-semibold text-green-600">${item.price.toFixed(2)}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -335,7 +316,7 @@ const HomeAll = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {getDisplayItems().slice(0, 6).map((item, index) => (
+                    {getDisplayItems().slice(0, 6).map((item) => (
                       <div
                         key={`special-${item._id}`}
                         className="rounded-lg overflow-hidden shadow hover:shadow-md transition duration-200 relative cursor-pointer"
@@ -346,47 +327,24 @@ const HomeAll = () => {
                             <img
                               src={item.imageUrl}
                               alt={item.name}
-                              className="w-full h-48 object-cover"
+                              className="w-full h-32 object-cover"
                               onError={(e) => {
                                 e.target.src = '';
                               }}
                             />
                           ) : (
-                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                            <div className="w-full h-32 bg-gray-200 flex items-center justify-center">
                               <span className="text-gray-400">No Image</span>
                             </div>
                           )}
-                          <div className="absolute top-3 left-3 bg-purple-600 text-white text-xs px-2 py-1 rounded">
-                            {index % 2 === 0 ? 'Spend A$15, Save A$3' : 'Spend A$20, Save A$5'}
-                          </div>
-                          <button 
-                            className="absolute top-3 right-3 bg-white rounded-full p-1 shadow"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Favorite functionality would go here
-                            }}
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                          </button>
                         </div>
                         <div className="p-4">
                           <h3 className="text-lg font-semibold">{item.name}</h3>
-                          <p className="text-gray-600 text-sm mb-1">
-                            $$ • {item.restaurantName} • {item.category || 'Various'}
+                          <p className="text-gray-600 text-sm mb-3">
+                            {item.restaurantName}
                           </p>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center text-sm">
-                              <span className="flex items-center mr-2">
-                                <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                                {4.5 + (index % 5) / 10}
-                              </span>
-                              <span className="mr-2">{20 + (index % 3) * 5}–{35 + (index % 3) * 5} min</span>
-                              <span>${item.price.toFixed(2)} fee</span>
-                            </div>
+                            <span className="font-semibold text-green-600">${item.price.toFixed(2)}</span>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -496,7 +454,7 @@ const HomeAll = () => {
       </main>
 
       <footer className="bg-gray-50 text-gray-600 text-center py-6 text-sm">
-        <p>© {new Date().getFullYear()} Eatzaa. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Fastfood. All rights reserved.</p>
       </footer>
     </div>
   );
