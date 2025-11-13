@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/theme.css';
 
 const DeliveryAdminPanel = () => {
   const [orders, setOrders] = useState([]);
@@ -112,20 +113,12 @@ const DeliveryAdminPanel = () => {
     }).format(date);
   };
 
-  const openInGoogleMaps = (location) => {
-    if (!location || !location.coordinates) {
-      alert('Location coordinates not available');
-      return;
-    }
-    
-    const { lat, lng } = location.coordinates;
-    const url = `https://www.google.com/maps?q=${lat},${lng}`;
-    window.open(url, '_blank');
-  };
+  
 
   return (
-    <div className="py-8">
-      <h1 className="text-3xl font-bold mb-8">Delivery Admin Panel</h1>
+    <div className="app-root py-8">
+      <div className="container mx-auto">
+        <h1 className="orders-title">Delivery Admin Panel</h1>
 
       {error && (
         <div className="bg-red-500 text-white p-3 rounded mb-4">
@@ -135,7 +128,7 @@ const DeliveryAdminPanel = () => {
 
       {loading ? (
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full border-4 border-yellow-500 border-t-transparent animate-spin mx-auto"></div>
+          <div className="w-12 h-12 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading orders...</p>
         </div>
       ) : orders.length === 0 ? (
@@ -178,52 +171,10 @@ const DeliveryAdminPanel = () => {
                   </span>
                 </div>
 
-                {/* Flexible location information handling */}
-                <div className="bg-gray-800 p-4 rounded-lg mb-4">
-                  <h4 className="font-medium text-yellow-500 mb-2">Delivery Location</h4>
-                  {order.location ? (
-                    <>
-                      <p className="text-gray-300 mb-2">
-                        {order.location.address || 'Address not available'}
-                      </p>
-                      {order.location.coordinates && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                          <span className="text-gray-400 text-sm mb-2 sm:mb-0">
-                            Coordinates: {order.location.coordinates.lat.toFixed(6)}, {order.location.coordinates.lng.toFixed(6)}
-                          </span>
-                          <button
-                            onClick={() => openInGoogleMaps(order.location)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded flex items-center w-full sm:w-auto justify-center sm:justify-start"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Open in Google Maps
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                      <p className="text-red-400 mb-2 sm:mb-0">Location information not available for this order.</p>
-                      <button
-                        onClick={() => alert("No location data available for this order")}
-                        className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded flex items-center opacity-50 cursor-not-allowed w-full sm:w-auto justify-center sm:justify-start"
-                        disabled
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Map Unavailable
-                      </button>
-                    </div>
-                  )}
-                </div>
+                {/* Delivery location intentionally hidden when not provided */}
 
                 <div className="space-y-2 mb-4">
-                  <h4 className="font-medium text-yellow-500 mb-2">Order Items</h4>
+                  <h4 className="font-medium text-green-500 mb-2">Order Items</h4>
                   {order.items && order.items.length > 0 ? (
                     order.items.map((item, index) => (
                       <div key={index} className="flex justify-between py-1 border-b border-gray-800">
@@ -262,7 +213,7 @@ const DeliveryAdminPanel = () => {
                   </div>
                   <div className="font-bold">
                     <span>Total: </span>
-                    <span className="text-yellow-500">${order.total ? order.total.toFixed(2) : '0.00'}</span>
+                    <span className="price">${order.total ? order.total.toFixed(2) : '0.00'}</span>
                   </div>
                 </div>
               </div>
@@ -270,6 +221,7 @@ const DeliveryAdminPanel = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };

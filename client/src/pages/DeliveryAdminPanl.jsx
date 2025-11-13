@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/theme.css';
 
 const DeliveryAdminPanel = () => {
   const [orders, setOrders] = useState([]);
@@ -90,8 +91,9 @@ const DeliveryAdminPanel = () => {
   };
 
   return (
-    <div className="py-8">
-      <h1 className="text-3xl font-bold mb-8">Delivery Admin Panel</h1>
+    <div className="app-root py-8">
+      <div className="container mx-auto">
+        <h1 className="orders-title">Delivery Admin Panel</h1>
 
       {error && (
         <div className="bg-red-500 text-white p-3 rounded mb-4">
@@ -101,7 +103,7 @@ const DeliveryAdminPanel = () => {
 
       {loading ? (
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full border-4 border-yellow-500 border-t-transparent animate-spin mx-auto"></div>
+          <div className="w-12 h-12 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading orders...</p>
         </div>
       ) : orders.length === 0 ? (
@@ -116,9 +118,11 @@ const DeliveryAdminPanel = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-bold text-lg">Order #{order._id.substring(order._id.length - 6)}</h3>
-                    <p className="text-gray-400 text-sm">
-                      {order.createdAt ? formatDate(order.createdAt) : 'Date not available'}
-                    </p>
+                    {order.createdAt && (
+                      <p className="text-gray-400 text-sm">
+                        {formatDate(order.createdAt)}
+                      </p>
+                    )}
                     <p className="text-gray-400 text-sm">
                       Status: {order.status || 'Unknown'}
                     </p>
@@ -134,6 +138,7 @@ const DeliveryAdminPanel = () => {
                 </div>
 
                 <div className="space-y-2 mb-4">
+                  <h4 className="font-medium text-green-500 mb-2">Order Items</h4>
                   {order.items && order.items.length > 0 ? (
                     order.items.map((item, index) => (
                       <div key={index} className="flex justify-between">
@@ -172,7 +177,7 @@ const DeliveryAdminPanel = () => {
                   </div>
                   <div className="font-bold">
                     <span>Total: </span>
-                    <span className="text-yellow-500">${order.total ? order.total.toFixed(2) : '0.00'}</span>
+                    <span className="price">${order.total ? order.total.toFixed(2) : '0.00'}</span>
                   </div>
                 </div>
               </div>
@@ -180,6 +185,7 @@ const DeliveryAdminPanel = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };
