@@ -24,7 +24,8 @@ Kiến trúc microservices giúp:
 
 ```text
 Client (React)
-│
+     │
+     ▼
 API Gateway (8000)
 ├── Auth-Service (5001)
 ├── Restaurant-Service (5002)
@@ -32,8 +33,11 @@ API Gateway (8000)
 ├── Delivery-Service (5004)
 ├── Payment-Service (5008)
 └── External API (Stripe)
-
-MongoDB (mỗi service quản lý 1 database riêng)
+     │
+     ▼
+MongoDB Atlas (authdb, restaurantdb, orderdb, paymentdb)
+Cloudinary API (media)
+Stripe API (payment)
 ```
 
 Hệ thống tuân theo nguyên tắc Database-per-service:
@@ -53,14 +57,14 @@ Hệ thống tuân theo nguyên tắc Database-per-service:
 
 - Port: 8000
 
-  3.2. Auth-Service
+  3.2. Auth-Service - 5001
 
 - Đăng ký, đăng nhập, refresh-token
 - Quản lý user (Customer, Restaurant Owner, Admin, Delivery Person)
 - JWT + Bcrypt
 - Database: authdb-mongo
 
-  3.3. Restaurant-Service
+  3.3. Restaurant-Service - 5002
 
 - Quản lý:
 
@@ -71,7 +75,7 @@ Hệ thống tuân theo nguyên tắc Database-per-service:
 - Cho phép admin và restaurant owner thêm/sửa/xoá
 - Database: restaurantdb
 
-  3.4. Order-Service
+  3.4. Order-Service - 5003
 
 - Xử lý:
 
@@ -83,14 +87,14 @@ Hệ thống tuân theo nguyên tắc Database-per-service:
 - Đồng bộ với Payment-Service khi thanh toán thành công
 - Database: orderdb
 
-  3.5. Delivery-Service
+  3.5. Delivery-Service - 5004
 
 - Quản lý shipper
 - Nhận đơn → xác nhận giao
 - Cập nhật trạng thái giao hàng
 - Database: deliverydb
 
-  3.6. Payment-Service
+  3.6. Payment-Service - 5008
 
 - Tích hợp Stripe SDK
 - Chức năng:
