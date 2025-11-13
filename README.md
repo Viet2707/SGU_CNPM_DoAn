@@ -106,24 +106,14 @@ Hệ thống tuân theo nguyên tắc Database-per-service:
 
 - Database: paymentdb
 
-🔄 4. Operational Flow – Luồng hoạt động tổng thể
+🔄 4. Operational Flow – Luồng hoạt động tổng thể (ĐÃ SỬA THEO FLOW MỚI)
 Dựa trên source code client + backend:
 
 1. Customer duyệt danh sách nhà hàng
    Client → API Gateway → Restaurant-Service
    → trả về danh sách menu + nhà hàng
-
 2. Customer chọn món → thêm vào giỏ (local state của client)
-
-3. Customer đặt món
-   Client → API Gateway → Order-Service
-   Order-Service:
-
-- Tính tổng tiền
-- Tạo order
-- Gán trạng thái: "PENDING_PAYMENT"
-
-4. Khởi tạo quy trình thanh toán
+3. Customer tiến hành thanh toán
    Client → API Gateway → Payment-Service
    Payment-Service:
 
@@ -131,16 +121,21 @@ Dựa trên source code client + backend:
 - Tạo Payment Intent
 - Trả clientSecret về client
 
-5. Customer thanh toán trên web
-   Client dùng Stripe SDK confirm payment
-
-6. Stripe → Payment-Service webhook
+4. Customer xác nhận thanh toán trên web
+   Client dùng Stripe SDK confirmCardPayment(clientSecret)
+5. Stripe → Payment-Service webhook
 
 - Payment-Service xác nhận payment_intent.succeeded
-- Cập nhật order:
+- Gửi thông tin sang Order-Service
+- Order-Service tạo order và gán trạng thái:
+  "PENDING"
 
-* "PAID"
-* lưu transactionId
+6. Restaurant nhận đơn mới và ACCEPT order
+   Restaurant Dashboard → API Gateway → Order-Service
+
+- Restaurant accept đơn
+- Order-Service cập nhật trạng thái:
+  "ACCEPTED"
 
 7. Order-Service → Delivery-Service
 
@@ -148,8 +143,9 @@ Dựa trên source code client + backend:
 
 8. Delivery-Service cập nhật
 
-- "DELIVERING"
-- "COMPLETED"
+- "CLAIM ORDER"
+- "IN TRANSIT"
+- "DELIVERED"
 
 💳 5. Payment Processing Flow (Stripe)
 Dựa 100% vào payment-service và order-service trong repo.
@@ -189,8 +185,8 @@ SGU_CNPM_DoAn
 │
 ├── api-gateway
 │   ├── middleware/
-│   ├── routes/        📌 (KHÔNG có controller – chỉ proxy)
-│   ├── config/
+│   ├── routes.js        📌 (KHÔNG có controller – chỉ proxy)
+│   ├── Dockerfile
 │   └── index.js
 │
 ├── auth-service
