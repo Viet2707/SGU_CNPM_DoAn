@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import '../styles/theme.css';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -36,10 +37,8 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  if (loading)
-    return <div className="p-6 text-black text-lg">Loading dashboard...</div>;
-  if (!stats)
-    return <div className="p-6 text-black text-lg">No stats available.</div>;
+  if (loading) return <div className="p-6 text-white text-lg">Loading dashboard...</div>;
+  if (!stats) return <div className="p-6 text-white text-lg">No stats available.</div>;
 
   const {
     totalOrders,
@@ -50,54 +49,62 @@ export default function AdminDashboard() {
   } = stats;
 
   return (
-    <div className="p-6 space-y-8 text-black">
-      <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
+    <div className="app-root py-8">
+      <div className="container mx-auto">
+        <h1 className="orders-title">Admin Dashboard</h1>
 
-      {/* Summary cards */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Orders" value={totalOrders} />
-        <StatCard title="Total Revenue" value={formatCurrency(totalRevenue)} />
-      </section>
+        {/* Summary cards */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+          <div className="card">
+            <div className="text-sm text-gray-400">Total Orders</div>
+            <div className="text-2xl font-bold mt-2">{totalOrders}</div>
+          </div>
+          <div className="card">
+            <div className="text-sm text-gray-400">Total Revenue</div>
+            <div className="text-2xl font-bold mt-2">{formatCurrency(totalRevenue)}</div>
+          </div>
+        </section>
 
-      {/* Restaurant Breakdown */}
-      <BreakdownTable
-        title="📦 By Restaurant"
-        data={restaurantBreakdown}
-        columns={[
-          { key: "restaurantName", label: "Restaurant" },
-          { key: "orders", label: "Orders" },
-          { key: "revenue", label: "Revenue" },
-          { key: "shares.restaurant", label: "Restaurant Share" },
-          { key: "shares.delivery", label: "Delivery Share" },
-          { key: "shares.platform", label: "Platform Share" },
-        ]}
-      />
+        {/* Restaurant Breakdown */}
+        <BreakdownTable
+          title="📦 By Restaurant"
+          data={restaurantBreakdown}
+          columns={[
+            { key: "restaurantName", label: "Restaurant" },
+            { key: "orders", label: "Orders" },
+            { key: "revenue", label: "Revenue" },
+            { key: "shares.restaurant", label: "Restaurant Share" },
+            { key: "shares.delivery", label: "Delivery Share" },
+            { key: "shares.platform", label: "Platform Share" },
+          ]}
+        />
 
-      {/* Delivery Breakdown */}
-      <BreakdownTable
-        title="🚚 By Delivery"
-        data={deliveryBreakdown}
-        columns={[
-          { key: "deliveryName", label: "DeliveryId" },
-          { key: "orders", label: "Orders" },
-          { key: "revenue", label: "Revenue" },
-          { key: "shares.restaurant", label: "Restaurant Share" },
-          { key: "shares.delivery", label: "Delivery Share" },
-          { key: "shares.platform", label: "Platform Share" },
-        ]}
-      />
+        {/* Delivery Breakdown */}
+        <BreakdownTable
+          title="🚚 By Delivery"
+          data={deliveryBreakdown}
+          columns={[
+            { key: "deliveryName", label: "DeliveryId" },
+            { key: "orders", label: "Orders" },
+            { key: "revenue", label: "Revenue" },
+            { key: "shares.restaurant", label: "Restaurant Share" },
+            { key: "shares.delivery", label: "Delivery Share" },
+            { key: "shares.platform", label: "Platform Share" },
+          ]}
+        />
 
-      {/* Customer Breakdown */}
-      <BreakdownTable
-        title="🧍‍♂️ By Customer"
-        data={customerBreakdown}
-        columns={[
-          { key: "customerName", label: "CustomerId" },
-          { key: "email", label: "Email" },
-          { key: "orders", label: "Orders" },
-          { key: "totalSpent", label: "Total Spent" },
-        ]}
-      />
+        {/* Customer Breakdown */}
+        <BreakdownTable
+          title="🧍‍♂️ By Customer"
+          data={customerBreakdown}
+          columns={[
+            { key: "customerName", label: "CustomerId" },
+            { key: "email", label: "Email" },
+            { key: "orders", label: "Orders" },
+            { key: "totalSpent", label: "Total Spent" },
+          ]}
+        />
+      </div>
     </div>
   );
 }
@@ -106,9 +113,9 @@ export default function AdminDashboard() {
 
 function StatCard({ title, value }) {
   return (
-    <div className="bg-white rounded-lg shadow p-5 border border-gray-200">
-      <div className="text-gray-700 text-base">{title}</div>
-      <div className="text-2xl font-bold mt-2 text-black">{value}</div>
+    <div className="card">
+      <div className="text-sm text-gray-400">{title}</div>
+      <div className="text-2xl font-bold mt-2">{value}</div>
     </div>
   );
 }
@@ -116,15 +123,15 @@ function StatCard({ title, value }) {
 function BreakdownTable({ title, data = [], columns = [] }) {
   return (
     <section>
-      <h2 className="text-2xl font-semibold mb-3">{title}</h2>
-      <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-        <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-gray-100 text-black">
+      <h2 className="text-2xl font-semibold mb-3 orders-subtitle">{title}</h2>
+      <div className="overflow-x-auto card">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-900 text-gray-300">
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-4 py-2 font-semibold border-b border-gray-300 text-left"
+                  className="px-4 py-2 font-semibold border-b border-gray-800 text-left"
                 >
                   {col.label}
                 </th>
@@ -134,11 +141,11 @@ function BreakdownTable({ title, data = [], columns = [] }) {
           <tbody>
             {data && data.length > 0 ? (
               data.map((item, i) => (
-                <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                <tr key={i} className={i % 2 === 0 ? "bg-gray-900" : "bg-gray-800"}>
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className="px-4 py-2 border-b border-gray-200 text-black"
+                      className="px-4 py-2 border-b border-gray-800 text-gray-200"
                     >
                       {getNestedValue(item, col.key)}
                     </td>
