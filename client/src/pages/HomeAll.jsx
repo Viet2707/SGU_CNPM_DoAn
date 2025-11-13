@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CartContext } from '../CartContext';
+import '../styles/theme.css';
 
 const HomeAll = () => {
   const { cart, addToCart } = useContext(CartContext);
@@ -111,7 +112,7 @@ const HomeAll = () => {
   // };
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col">
+    <div className="app-root">
       {/* Notification */}
       <div 
         id="notification" 
@@ -125,19 +126,16 @@ const HomeAll = () => {
       </div>
 
       {/* Header - Similar to Uber Eats */}
-      <header className="bg-white py-4 px-6 shadow-sm border-b sticky top-0 z-50">
+      <header className="header">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            <h1 
-              className="text-2xl font-bold cursor-pointer" 
-              onClick={() => navigate('/')}
-            >
-              <span className="text-black">Fast</span>
-              <span className="text-green-500">food</span>
+            <h1 className="brand" onClick={() => navigate('/')}>
+              <span className="brand-main">Fast</span>
+              <span className="brand-accent">food</span>
             </h1>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="actions">
             {/* <button
               className="flex items-center text-black px-3 py-2"
               onClick={() => navigate('/delivery-timing')}
@@ -149,10 +147,7 @@ const HomeAll = () => {
             </button> */}
             
             <div className="relative">
-              <button
-                onClick={toggleSearchBar}
-                className="flex items-center text-black px-3 py-2"
-              >
+              <button onClick={toggleSearchBar} className="flex items-center px-3 py-2">
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -161,10 +156,7 @@ const HomeAll = () => {
             </div>
             
             <div className="relative">
-              <button
-                onClick={() => navigate('/create-order')}
-                className="flex items-center text-black px-3 py-2"
-              >
+              <button onClick={() => navigate('/create-order')} className="flex items-center px-3 py-2">
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -188,8 +180,8 @@ const HomeAll = () => {
 
         {/* Search Bar Dropdown */}
         {showSearchBar && (
-          <div className="container mx-auto mt-4 animate-slideDown">
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+          <div className="container mx-auto mt-4">
+            <div className="search-bar">
               <svg className="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -248,38 +240,32 @@ const HomeAll = () => {
                   {searchResults.map(item => (
                     <div
                       key={`search-${item._id}`}
-                      className="rounded-lg overflow-hidden shadow hover:shadow-md transition duration-200 cursor-pointer"
-                      // onClick={() => navigate(`/menu-item/${item._id}`)}
+                      className="card"
                     >
                       <div className="relative">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
                             alt={item.name}
-                            className="w-full h-32 object-cover"
+                            className="card-img"
                             onError={(e) => {
                               e.target.src = 'https://via.placeholder.com/150?text=No+Image';
                             }}
                           />
                         ) : (
-                          <div className="w-full h-32 bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-400">No Image</span>
+                          <div className="card-img bg-gray-800 flex items-center justify-center">
+                            <span className="text-gray-500">No Image</span>
                           </div>
                         )}
                       </div>
-                      <div className="p-4">
+                      <div className="card-body">
                         <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <p className="text-gray-600 text-sm mb-3">
-                          {item.restaurantName}
-                        </p>
+                        <p className="text-gray-400 text-sm mb-3">{item.restaurantName}</p>
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-green-600">${item.price.toFixed(2)}</span>
+                          <span className="price">${item.price.toFixed(2)}</span>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddToCart(item);
-                            }}
-                            className="bg-green-500 text-white text-sm px-3 py-1 rounded hover:bg-green-600 transition"
+                            onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }}
+                            className="btn-add"
                           >
                             Add
                           </button>
@@ -317,47 +303,24 @@ const HomeAll = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {getDisplayItems().slice(0, 6).map((item) => (
-                      <div
-                        key={`special-${item._id}`}
-                        className="rounded-lg overflow-hidden shadow hover:shadow-md transition duration-200 relative cursor-pointer"
-                        // onClick={() => navigate(`/menu-item/${item._id}`)}
-                      >
-                        <div className="relative">
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="w-full h-32 object-cover"
-                              onError={(e) => {
-                                e.target.src = '';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-32 bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400">No Image</span>
+                          <div key={`special-${item._id}`} className="card">
+                            <div className="relative">
+                              {item.imageUrl ? (
+                                <img src={item.imageUrl} alt={item.name} className="card-img" onError={(e) => { e.target.src = ''; }} />
+                              ) : (
+                                <div className="card-img bg-gray-800 flex items-center justify-center"><span className="text-gray-500">No Image</span></div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div className="p-4">
-                          <h3 className="text-lg font-semibold">{item.name}</h3>
-                          <p className="text-gray-600 text-sm mb-3">
-                            {item.restaurantName}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-green-600">${item.price.toFixed(2)}</span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddToCart(item);
-                              }}
-                              className="bg-green-500 text-white text-sm px-3 py-1 rounded hover:bg-green-600 transition"
-                            >
-                              Add
-                            </button>
+                            <div className="card-body">
+                              <h3 className="text-lg font-semibold">{item.name}</h3>
+                              <p className="text-gray-400 text-sm mb-3">{item.restaurantName}</p>
+                              <div className="flex items-center justify-between">
+                                <span className="price">${item.price.toFixed(2)}</span>
+                                <button onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }} className="btn-add">Add</button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        ))}
                   </div>
                 </div>
 
@@ -453,7 +416,7 @@ const HomeAll = () => {
         )}
       </main>
 
-      <footer className="bg-gray-50 text-gray-600 text-center py-6 text-sm">
+      <footer className="footer">
         <p>© {new Date().getFullYear()} Fastfood. All rights reserved.</p>
       </footer>
     </div>
