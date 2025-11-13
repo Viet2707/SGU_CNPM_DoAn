@@ -132,8 +132,8 @@ const HomeAll = () => {
               className="text-2xl font-bold cursor-pointer" 
               onClick={() => navigate('/')}
             >
-              <span className="text-black">Eat</span>
-              <span className="text-green-500">zaa</span>
+              <span className="text-black">Fast</span>
+              <span className="text-green-500">food</span>
             </h1>
           </div>
 
@@ -318,9 +318,9 @@ const HomeAll = () => {
                   <div className="flex justify-between items-center mb-4">
                     <div>
                       <h2 className="text-2xl font-bold">Special Offers</h2>
-                      <p className="text-gray-600 text-sm">Provided by local restaurants</p>
+                      {/* <p className="text-gray-600 text-sm">Provided by local restaurants</p> */}
                     </div>
-                    <div className="flex space-x-2">
+                    {/* <div className="flex space-x-2">
                       <button className="bg-gray-100 rounded-full p-2">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -331,7 +331,7 @@ const HomeAll = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
-                    </div>
+                    </div> */}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -405,7 +405,7 @@ const HomeAll = () => {
 
                 {/* Popular Near You Section */}
                 <div className="mb-16">
-                  <div className="flex justify-between items-center mb-4">
+                  {/* <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold">Popular Near You</h2>
                     <div className="flex items-center">
                       <a href="#" className="text-green-500 mr-4">View all</a>
@@ -422,9 +422,9 @@ const HomeAll = () => {
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {getPopularItems().map((item, index) => (
                       <div
                         key={`popular-${item._id}`}
@@ -487,7 +487,7 @@ const HomeAll = () => {
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </div> */}
                 </div>
               </>
             )}

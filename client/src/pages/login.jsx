@@ -54,7 +54,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           <div>
             <label className="block text-xl font-semibold text-black mb-2">
-              What's your user name or email?
+              What's your email?
             </label>
             <input
               type="text"

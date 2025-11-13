@@ -13,7 +13,7 @@ const Footer = () => {
                     href="https://pagedone.io/"
                     className="flex justify-center lg:justify-start"
                     >
-                    <text className="text-2xl font-bold text-gray-900">Eatzaa</text>
+                    <text className="text-2xl font-bold text-gray-900">FASTFOOD</text>
                     </a>
                     <p className="py-8 text-sm text-gray-500 lg:max-w-xs text-center lg:text-left">
                     Trusted in more than 100 countries &amp; 5 million customers. Have any
