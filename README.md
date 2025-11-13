@@ -21,6 +21,7 @@ Kiến trúc microservices giúp:
 - Giảm coupling giữa các thành phần
 
 🏗 2. Kiến trúc tổng thể hệ thống
+
 Client (React)
 │
 API Gateway (8000)
@@ -30,6 +31,7 @@ API Gateway (8000)
 ├── Delivery-Service (5004)
 ├── Payment-Service (5008)
 └── External API (Stripe)
+
 MongoDB (mỗi service quản lý 1 database riêng)
 
 Hệ thống tuân theo nguyên tắc Database-per-service:
@@ -180,7 +182,7 @@ SGU_CNPM_DoAn
 │
 ├── api-gateway
 │ ├── middleware/
-│ ├── routes/ 📌 (KHÔNG có controller – chỉ định tuyến proxy)
+│ ├── routes/ 📌 (KHÔNG có controller – chỉ proxy)
 │ ├── config/
 │ └── index.js
 │
@@ -227,8 +229,7 @@ SGU_CNPM_DoAn
 │ ├── public/
 │ └── src/
 │
-├── docker-compose.yml
-└── k8s/ ← Kubernetes manifests
+└── docker-compose.yml
 
 🐳 7. Chạy hệ thống bằng Docker
 7.1. Yêu cầu
