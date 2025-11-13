@@ -22,6 +22,7 @@ Kiến trúc microservices giúp:
 
 🏗 2. Kiến trúc tổng thể hệ thống
 
+```text
 Client (React)
 │
 API Gateway (8000)
@@ -33,6 +34,7 @@ API Gateway (8000)
 └── External API (Stripe)
 
 MongoDB (mỗi service quản lý 1 database riêng)
+```
 
 Hệ thống tuân theo nguyên tắc Database-per-service:
 → mỗi service có database độc lập, không chia sẻ schema.
@@ -178,58 +180,60 @@ Order-Service:
 
 7. Order-Service giao việc cho Delivery-Service
 
+```text
 SGU_CNPM_DoAn
 │
 ├── api-gateway
-│ ├── middleware/
-│ ├── routes/ 📌 (KHÔNG có controller – chỉ proxy)
-│ ├── config/
-│ └── index.js
+│   ├── middleware/
+│   ├── routes/        📌 (KHÔNG có controller – chỉ proxy)
+│   ├── config/
+│   └── index.js
 │
 ├── auth-service
-│ ├── models/
-│ ├── routes/ 📌 Controller
-│ ├── utils/
-│ ├── seedAdmin.js
-│ ├── index.js
-│ └── Dockerfile
+│   ├── models/
+│   ├── routes/        📌 Controller
+│   ├── utils/
+│   ├── seedAdmin.js
+│   ├── index.js
+│   └── Dockerfile
 │
 ├── restaurant-service
-│ ├── models/
-│ ├── routes/ 📌 Controller
-│ ├── utils/
-│ ├── index.js
-│ └── Dockerfile
+│   ├── models/
+│   ├── routes/        📌 Controller
+│   ├── utils/
+│   ├── index.js
+│   └── Dockerfile
 │
 ├── order-service
-│ ├── models/
-│ ├── routes/ 📌 Controller
-│ ├── utils/
-│ ├── index.js
-│ └── Dockerfile
+│   ├── models/
+│   ├── routes/        📌 Controller
+│   ├── utils/
+│   ├── index.js
+│   └── Dockerfile
 │
 ├── delivery-service
-│ ├── routes/ 📌 Controller
-│ ├── utils/
-│ ├── index.js
-│ └── Dockerfile
+│   ├── routes/        📌 Controller
+│   ├── utils/
+│   ├── index.js
+│   └── Dockerfile
 │
 ├── payment-service
-│ ├── models/
-│ ├── routes/ 📌 Controller
-│ ├── utils/
-│ ├── stripe/
-│ ├── server.js
-│ └── Dockerfile
+│   ├── models/
+│   ├── routes/        📌 Controller
+│   ├── utils/
+│   ├── stripe/
+│   ├── server.js
+│   └── Dockerfile
 │
 ├── client (React)
-│ ├── pages/
-│ ├── components/
-│ ├── services/
-│ ├── public/
-│ └── src/
+│   ├── pages/
+│   ├── components/
+│   ├── services/
+│   ├── public/
+│   └── src/
 │
 └── docker-compose.yml
+```
 
 🐳 7. Chạy hệ thống bằng Docker
 7.1. Yêu cầu
@@ -239,7 +243,7 @@ SGU_CNPM_DoAn
 - Stripe Secret Key
 
   7.2. Giải nén dự án và chạy
-  docker compose up --build
+  docker compose up -d --build
 
 Các dịch vụ sẽ chạy tại:
 
@@ -253,20 +257,7 @@ Các dịch vụ sẽ chạy tại:
 - Client 3000
   MongoDB chạy qua image mongo trong compose.
 
-🖥 8. Chạy Development Mode
-Backend
-cd auth-service
-npm install
-npm run dev
-
-Lặp lại cho tất cả các service.
-
-Frontend
-cd client
-npm install
-npm run dev
-
-🔐 9. API Gateway Routing
+🔐 8. API Gateway Routing
 Ví dụ trong gateway:
 /auth/_ → auth-service:5001
 /restaurant/_ → restaurant-service:5002
@@ -274,13 +265,13 @@ Ví dụ trong gateway:
 /delivery/_ → delivery-service:5004
 /payment/\* → payment-service:5008
 
-🧪 10. Kiểm thử API
+🧪 9. Kiểm thử API
 Có thể dùng:
 ✔ Postman
 ✔ Thunder Client
 ✔ Swagger (nếu tự bổ sung)
 
-📦 11. Công nghệ sử dụng
+📦 10. Công nghệ sử dụng
 Thành phần Công nghệ
 Backend Node.js + Express
 Frontend React + Vite
