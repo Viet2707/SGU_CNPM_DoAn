@@ -116,9 +116,9 @@ const AllOrders = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-bold text-lg">Order #{order._id.substring(order._id.length - 6)}</h3>
-                    <p className="text-gray-400 text-sm">
-                      {order.createdAt ? formatDate(order.createdAt) : 'Date not available'}
-                    </p>
+                    {order.createdAt && (
+                      <p className="text-gray-400 text-sm">{formatDate(order.createdAt)}</p>
+                    )}
                     <p className="text-gray-400 text-sm">
                       Status: {order.status || 'Unknown'}
                     </p>
