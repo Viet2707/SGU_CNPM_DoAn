@@ -6,6 +6,36 @@ const DeliveryAdminPanel = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deliveryPerson, setDeliveryPerson] = useState(null);
+
+  // Decode JWT to get delivery person info
+  const decodeToken = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (err) {
+      console.error('Error decoding token:', err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Get delivery person info from token
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decoded = decodeToken(token);
+      if (decoded) {
+        setDeliveryPerson(decoded);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -160,10 +190,8 @@ const DeliveryAdminPanel = () => {
                     <p className="text-gray-400 text-sm">
                       Status: {order.status || 'Unknown'}
                     </p>
-                    {order.deliveryPersonName ? (
-                      <p className="text-gray-400 text-sm">Assigned to: {order.deliveryPersonName}</p>
-                    ) : order.deliveryPersonId ? (
-                      <p className="text-gray-400 text-sm">Assigned to: Unnamed Delivery Person</p>
+                    {order.deliveryPersonId ? (
+                      <p className="text-gray-400 text-sm">Assigned to: {deliveryPerson?.username || deliveryPerson?.email || 'Delivery Person'}</p>
                     ) : null}
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeClass(order.status)}`}>

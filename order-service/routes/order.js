@@ -202,7 +202,8 @@ router.get(
       const orders = await Order.find({
         $or: [
           { status: "accepted" }, // nhà hàng đã xác nhận
-          { status: "in-transit", deliveryPersonId: req.user.id }, // đang giao
+          { status: "in-transit", deliveryPersonId: req.user.id },
+          { status: "delivered", deliveryPersonId: req.user.id }, // đang giao
         ],
       });
       res.json(orders);
