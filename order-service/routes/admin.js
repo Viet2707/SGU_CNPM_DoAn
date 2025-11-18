@@ -22,15 +22,22 @@ const http = axios.create({ timeout: 3000 });
 // ✅ Admin thống kê tổng hợp
 router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
-    // totalOrders: count all orders (so totals match breakdowns which are across all statuses)
-    const totalOrders = await Order.countDocuments();
+    // ⛳ 1) Chỉ tính đơn hàng đã giao thành công
+    const deliveredFilter = { status: "delivered" };
+
+    // Tổng số đơn delivered
+    const totalOrders = await Order.countDocuments(deliveredFilter);
+
+    // Tổng doanh thu delivered
     const totalRevenueAgg = await Order.aggregate([
+      { $match: deliveredFilter },               // ⭐ thêm match
       { $group: { _id: null, total: { $sum: "$total" } } },
     ]);
     const totalRevenue = totalRevenueAgg[0]?.total || 0;
 
-    // Thống kê theo nhà hàng (tất cả đơn)
+    // Báo cáo theo nhà hàng — chỉ delivered
     const restaurantAgg = await Order.aggregate([
+      { $match: deliveredFilter },               // ⭐ thêm match
       {
         $group: {
           _id: "$restaurantId",
@@ -40,8 +47,9 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
       },
     ]);
 
-    // Thống kê theo tài xế (tất cả đơn)
+    // Báo cáo theo tài xế — chỉ delivered
     const deliveryAgg = await Order.aggregate([
+      { $match: deliveredFilter },               // ⭐ thêm match
       {
         $group: {
           _id: "$deliveryPersonId",
@@ -51,8 +59,9 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
       },
     ]);
 
-    // Thống kê theo khách hàng (tất cả đơn)
+    // Báo cáo theo khách hàng — chỉ delivered
     const customerAgg = await Order.aggregate([
+      { $match: deliveredFilter },               // ⭐ thêm match
       {
         $group: {
           _id: "$customerId",
@@ -62,7 +71,8 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
       },
     ]);
 
-    // Lấy tên nhà hàng (nội bộ) - note: restaurant-service exposes /api/restaurants
+    /* ---- GIỮ NGUYÊN PHẦN FETCH RESTAURANT + USER INFO ---- */
+
     let restaurantNames = {};
     try {
       const resp = await http.get(`${RESTAURANT_SERVICE_URL}/api/restaurants`);
@@ -76,16 +86,13 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
       console.warn("Warning: failed to fetch restaurant names:", e.message);
     }
 
-    // Lấy tên tài xế và khách hàng từ auth-service
     async function getUserNames(ids) {
       if (!ids.length) return {};
       try {
-        // call auth service internal endpoint
         const resp = await http.post(
           `${AUTH_SERVICE_URL}/admin/users/bulk-info`,
           { ids }
         );
-        // resp.data: [{ _id, name, email, role }]
         const map = {};
         resp.data.forEach((u) => {
           map[u._id] = u;
@@ -101,7 +108,7 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
     const deliveryUsers = await getUserNames(deliveryIds);
     const customerUsers = await getUserNames(customerIds);
 
-    // Tính shares
+    // Giữ nguyên logic chia shares
     function calcShares(total) {
       return {
         restaurant: Math.round(total * 0.8),
@@ -110,7 +117,6 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
       };
     }
 
-    // Chuẩn hóa dữ liệu trả về cho frontend
     const restaurantBreakdown = restaurantAgg.map((r) => ({
       restaurantName: restaurantNames[r._id] || r._id,
       orders: r.orders,
@@ -131,7 +137,6 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
     });
 
     const customerBreakdown = customerAgg.map((c) => ({
-      // show the id as the 'name' column and the email if available
       customerName: c._id,
       email: customerUsers[c._id]?.username || "-",
       orders: c.orders,
