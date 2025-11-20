@@ -3,6 +3,7 @@ const router = express.Router();
 const Order = require("../models/Order");
 const { verifyToken, allowRoles } = require("../utils/authMiddleware");
 const axios = require("axios");
+const { publishEvent } = require("../rabbitmq"); // 🔔 RabbitMQ
 
 const NOTIFY_SERVICE_URL = process.env.NOTIFY_SERVICE_URL;
 
@@ -101,6 +102,16 @@ router.post(
         { headers: { Authorization: req.headers.authorization } }
       );
 
+      // 🔔 Publish event: order.created
+      await publishEvent("order.created", {
+        orderId: order._id.toString(),
+        customerId: order.customerId,
+        restaurantId: order.restaurantId,
+        items: order.items,
+        total: order.total,
+        status: order.status,
+      });
+
       res.status(201).json({ message: "Order created successfully", order });
     } catch (err) {
       console.error("Order creation error:", err.message);
@@ -178,10 +189,52 @@ router.patch(
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     order.status = status;
-    if (req.user.role === "delivery" && status === "in-transit")
+    if (req.user.role === "delivery" && status === "in-transit") {
       order.deliveryPersonId = req.user.id;
+    }
 
     await order.save();
+
+    // 🔔 RabbitMQ event theo vai trò + status
+    try {
+      if (req.user.role === "restaurant" && status === "accepted") {
+        // Nhà hàng accept đơn
+        await publishEvent("order.accepted", {
+          orderId: order._id.toString(),
+          restaurantId: order.restaurantId,
+          customerId: order.customerId,
+        });
+      }
+
+      if (req.user.role === "delivery") {
+        if (status === "in-transit") {
+          // Shipper nhận đơn + bắt đầu giao
+          await publishEvent("order.assigned", {
+            orderId: order._id.toString(),
+            deliveryPersonId: req.user.id,
+            restaurantId: order.restaurantId,
+            customerId: order.customerId,
+          });
+
+          await publishEvent("delivery.in_transit", {
+            orderId: order._id.toString(),
+            deliveryPersonId: req.user.id,
+            status: "in_transit",
+          });
+        } else if (status === "delivered") {
+          // Shipper giao xong
+          await publishEvent("delivery.completed", {
+            orderId: order._id.toString(),
+            deliveryPersonId: req.user.id,
+            status: "completed",
+          });
+        }
+      }
+    } catch (e) {
+      console.error("[RabbitMQ] Failed to publish status event:", e.message);
+      // Không chặn response cho client, chỉ log lỗi event
+    }
+
     res.json({ message: "Order status updated successfully", order });
   }
 );
@@ -203,7 +256,7 @@ router.get(
         $or: [
           { status: "accepted" }, // nhà hàng đã xác nhận
           { status: "in-transit", deliveryPersonId: req.user.id },
-          { status: "delivered", deliveryPersonId: req.user.id }, // đang giao
+          { status: "delivered", deliveryPersonId: req.user.id }, // đã giao
         ],
       });
       res.json(orders);
@@ -214,7 +267,6 @@ router.get(
   }
 );
 
-// 🧾 All not delivered yet
 // 🧾 All not delivered yet
 // ✅ Endpoint cho Delivery hiển thị đơn hàng
 router.get(

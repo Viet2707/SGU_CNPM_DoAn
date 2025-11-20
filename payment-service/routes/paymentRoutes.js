@@ -1,13 +1,13 @@
-// routes/paymentRoutes.js — BẢN CHUẨN
+// routes/paymentRoutes.js — BẢN CHUẨN + RabbitMQ
 const express = require("express");
 const router = express.Router();
 
 const { verifyToken, allowRoles } = require("../utils/authMiddleware");
 const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
+const { publishEvent } = require("../rabbitmq"); // 🔔 RabbitMQ
 
 // ❌ BỎ KẾT NỐI MONGO Ở ĐÂY — server.js đã connect rồi
-// mongoose.connect(...)
 
 // ✅ Khởi tạo Stripe theo kiểu an toàn
 const Stripe = require("stripe");
@@ -195,6 +195,7 @@ router.get(
   }
 );
 
+// 🔄 Gắn orderId vào payment + publish event payment.succeeded
 router.post(
   "/update/:paymentIntentId",
   verifyToken,
@@ -210,6 +211,25 @@ router.post(
       );
       if (!payment)
         return res.status(404).json({ message: "Payment not found" });
+
+      // Chỉ publish khi payment đã thành công và có orderId
+      if (payment.status === "succeeded" && orderId) {
+        try {
+          await publishEvent("payment.succeeded", {
+            orderId,
+            paymentIntentId,
+            amount: payment.amount,
+            currency: payment.currency,
+            userId: payment.userId,
+          });
+        } catch (e) {
+          console.error(
+            "[RabbitMQ] Failed to publish payment.succeeded:",
+            e.message
+          );
+        }
+      }
+
       res.json({ message: "Payment updated", payment });
     } catch (err) {
       console.error("Payment update error:", err);

@@ -5,8 +5,10 @@ const Restaurant = require("../models/Restaurant");
 const MenuItem = require("../models/MenuItem");
 const multer = require("multer");
 const path = require("path");
+const axios = require("axios");
 const { verifyToken, allowRoles } = require("../utils/authMiddleware");
 const { v2: cloudinary } = require("cloudinary");
+const { publishEvent } = require("../rabbitmq");   // <-- RABBITMQ
 
 // Configure Cloudinary
 cloudinary.config({
@@ -14,10 +16,13 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-///restaurant/api/restaurants
+
+// =============================
+// GET ALL RESTAURANTS
+// =============================
 router.get("/api/restaurants", async (req, res) => {
   try {
-    const restaurants = await Restaurant.find(); // You can add filters if needed
+    const restaurants = await Restaurant.find();
     res.json(restaurants);
   } catch (err) {
     console.error("Error fetching restaurants:", err.message);
@@ -25,9 +30,12 @@ router.get("/api/restaurants", async (req, res) => {
   }
 });
 
+// =============================
+// GET RESTAURANTS BY OWNER
+// =============================
 router.get("/api/restaurants-id", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.id; // ID của người sở hữu (restaurant owner)
+    const userId = req.user.id;
     const restaurants = await Restaurant.find({ ownerId: userId });
     res.json(restaurants);
   } catch (error) {
@@ -36,14 +44,15 @@ router.get("/api/restaurants-id", verifyToken, async (req, res) => {
   }
 });
 
+// =============================
+// GET MENU BY RESTAURANT
+// =============================
 router.get("/:restaurantId/menu", async (req, res) => {
   try {
     const { restaurantId } = req.params;
     console.log("📥 Fetching menu for restaurant:", restaurantId);
 
-    // Query trực tiếp bằng string
-    const menuItems = await MenuItem.find({ restaurantId: restaurantId });
-
+    const menuItems = await MenuItem.find({ restaurantId });
     console.log("✅ Found menu items:", menuItems);
     res.json(menuItems);
   } catch (err) {
@@ -52,7 +61,9 @@ router.get("/:restaurantId/menu", async (req, res) => {
   }
 });
 
-// Create restaurant profile
+// =============================
+// CREATE RESTAURANT PROFILE
+// =============================
 router.post(
   "/profile",
   verifyToken,
@@ -74,29 +85,9 @@ router.post(
   }
 );
 
-// Add menu item
-// router.post('/menu', verifyToken, allowRoles('restaurant'), async (req, res) => {
-//   try {
-
-//     const userId = req.user.id;
-//     console.log('Logged-in user ID:', userId);
-
-//     const restaurant = await Restaurant.findOne({ ownerId: userId });
-//     if (!restaurant) {
-//       return res.status(404).json({ message: 'Restaurant not found' });
-//     }
-
-//     const { name, description, price } = req.body;
-//     const item = new MenuItem({ name, description, price, restaurantId: restaurant._id });
-//     await item.save();
-//     res.send({ message: 'Menu item added', item });
-//   } catch (err) {
-//     console.error('Error in /restaurant/menu:', err);
-//     res.status(500).send({ message: 'Internal server error' });
-//   }
-// });
-
-// Add menu item with image
+// =============================
+// ADD MENU ITEM (WITH IMAGE)
+// =============================
 router.post(
   "/menu",
   verifyToken,
@@ -114,10 +105,8 @@ router.post(
       const { name, description, price } = req.body;
       let imageUrl;
 
-      // Handle image upload to Cloudinary
       if (req.files && req.files.image) {
         const file = req.files.image;
-        // Validate file type
         const filetypes = /jpeg|jpg|png/;
         const mimetype = filetypes.test(file.mimetype);
         if (!mimetype) {
@@ -126,7 +115,6 @@ router.post(
             .json({ message: "Only JPEG/JPG/PNG images are allowed" });
         }
 
-        // Upload to Cloudinary
         const result = await cloudinary.uploader.upload(file.tempFilePath, {
           folder: "food-delivery/menu",
           resource_type: "image",
@@ -152,16 +140,20 @@ router.post(
   }
 );
 
-// View own menu items
+// =============================
+// GET OWN MENU ITEMS
+// =============================
 router.get("/menu", verifyToken, allowRoles("restaurant"), async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log("Logged-in user ID:", userId);
 
     const restaurants = await Restaurant.find({ ownerId: userId });
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
 
-    const items = await MenuItem.find({ restaurantId: { $in: restaurantIds } });
+    const items = await MenuItem.find({
+      restaurantId: { $in: restaurantIds },
+    });
+
     res.send(items);
   } catch (err) {
     console.error("Error in /restaurant/menu GET:", err);
@@ -169,7 +161,9 @@ router.get("/menu", verifyToken, allowRoles("restaurant"), async (req, res) => {
   }
 });
 
-// Delete a menu item
+// =============================
+// DELETE MENU ITEM
+// =============================
 router.delete(
   "/menu/:id",
   verifyToken,
@@ -185,26 +179,24 @@ router.delete(
   }
 );
 
-// Get all menu items with restaurant names
-// Get all menu items with restaurant names
+// =============================
+// GET MENU WITH RESTAURANT NAME
+// =============================
 router.get("/menu/all", verifyToken, async (req, res) => {
   try {
-    // Fetch all menu items
     const menuItems = await MenuItem.find();
 
-    // Lấy danh sách ID nhà hàng (dạng ObjectId)
     const restaurantIds = [
       ...new Set(menuItems.map((item) => item.restaurantId.toString())),
     ];
 
-    // Lấy thông tin nhà hàng tương ứng
     const restaurants = await Restaurant.find({ _id: { $in: restaurantIds } });
+
     const restaurantMap = restaurants.reduce((map, restaurant) => {
       map[restaurant._id.toString()] = restaurant.name;
       return map;
     }, {});
 
-    // Gộp dữ liệu
     const itemsWithRestaurant = menuItems.map((item) => ({
       _id: item._id,
       name: item.name,
@@ -223,14 +215,57 @@ router.get("/menu/all", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/api/restaurants", async (req, res) => {
-  try {
-    const restaurants = await Restaurant.find({}, "_id name ownerId");
-    res.json(restaurants);
-  } catch (err) {
-    console.error("Fetch restaurants error:", err.message);
-    res.status(500).json({ message: "Failed to fetch restaurants" });
+// =============================
+// ACCEPT ORDER + PUBLISH EVENT
+// =============================
+router.post(
+  "/accept-order",
+  verifyToken,
+  allowRoles("restaurant"),
+  async (req, res) => {
+    try {
+      const { orderId } = req.body;
+      const ownerId = req.user.id;
+
+      console.log("🍽 Accepting order:", orderId);
+
+      const restaurant = await Restaurant.findOne({ ownerId });
+      if (!restaurant) {
+        return res.status(403).json({ message: "You do not own a restaurant" });
+      }
+
+      const ORDER_SERVICE_URL =
+        process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+
+      const response = await axios.post(
+        `${ORDER_SERVICE_URL}/restaurant/accept`,
+        { orderId }
+      );
+
+      const order = response.data.order;
+
+      // PUBLISH EVENT
+      await publishEvent("order.accepted", {
+        orderId: order._id,
+        restaurantId: order.restaurantId,
+        customerId: order.customerId,
+        items: order.items,
+        total: order.total,
+        deliveryLocation: order.deliveryLocation,
+      });
+
+      console.log("✅ Published order.accepted");
+
+      return res.json({
+        message: "Order accepted",
+        eventSent: true,
+        order,
+      });
+    } catch (err) {
+      console.error("❌ Accept order error:", err.message);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
 
 module.exports = router;

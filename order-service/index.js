@@ -6,6 +6,7 @@ const morgan = require("morgan");
 require("dotenv").config();
 
 const app = express();
+require("./rabbitmq");  
 app.use(cors());
 app.use(express.json());
 app.use(helmet());

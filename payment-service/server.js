@@ -6,6 +6,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const app = express();
+require("./rabbitmq");  
 app.use(cors());
 app.use(express.json());
 
