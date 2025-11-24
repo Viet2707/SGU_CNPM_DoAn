@@ -14,8 +14,24 @@ services:
     depends_on:
       - mongo
     networks:
-      - app-net     # ✅ thêm dòng này
+      - app-net # ✅ thêm dòng này
     restart: always
+
+    # 🚁 Drone Service
+  drone-service:
+    build: ./drone-service
+    container_name: drone-service
+    ports:
+      - "5041:5009"
+    environment:
+      - PORT=5009
+      - ORDER_SERVICE_URL=http://order-service:5003
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      - order-service
+      - rabbitmq
+    networks:
+      - app-net
 
   # 🍽️ Restaurant Service
   restaurant-service:
@@ -33,7 +49,7 @@ services:
     depends_on:
       - mongo
     networks:
-      - app-net     # ✅ thêm dòng này
+      - app-net # ✅ thêm dòng này
     restart: always
 
   # 🧾 Order Service
@@ -55,7 +71,7 @@ services:
       - restaurant-service
       - rabbitmq
     networks:
-      - app-net     # ✅ thêm dòng này
+      - app-net # ✅ thêm dòng này
     restart: always
 
   # 💸 Payment Service
@@ -73,7 +89,7 @@ services:
       - mongo
       - rabbitmq
     networks:
-      - app-net     # ✅ thêm dòng này
+      - app-net # ✅ thêm dòng này
     restart: always
 
   # 🚚 Delivery Service
@@ -90,7 +106,7 @@ services:
       - order-service
       - rabbitmq
     networks:
-      - app-net     # ✅ thêm dòng này
+      - app-net # ✅ thêm dòng này
     restart: always
 
   # 🧩 API Gateway
@@ -116,7 +132,7 @@ services:
     container_name: rabbitmq
     ports:
       - "5672:5672"
-      - "15672:15672"   # http://localhost:15672 (guest/guest)
+      - "15672:15672" # http://localhost:15672 (guest/guest)
     networks:
       - app-net
     restart: always

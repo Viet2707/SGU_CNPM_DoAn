@@ -1,39 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import '../styles/OrderHistory.css';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "../styles/OrderHistory.css";
+import { useNavigate } from "react-router-dom";
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const user = localStorage.getItem('user');
+        const token = localStorage.getItem("token");
+        const user = localStorage.getItem("user");
 
-        let endpoint = '/order/customer/orders';
-        if (user === 'restaurant') {
-          endpoint = '/order/restaurant';
-        } else if (user === 'delivery') {
-          endpoint = '/order/delivery';
+        let endpoint = "/order/customer/orders";
+        if (user === "restaurant") {
+          endpoint = "/order/restaurant";
+        } else if (user === "delivery") {
+          endpoint = "/order/delivery";
         }
 
         const response = await axios.get(`http://localhost:8000${endpoint}`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         setOrders(response.data);
       } catch (err) {
         if (err.response) {
-          console.error('Response error:', err.response.data);
+          console.error("Response error:", err.response.data);
         } else if (err.request) {
-          console.error('Request made but no response:', err.request);
+          console.error("Request made but no response:", err.request);
         } else {
-          console.error('Error:', err.message);
+          console.error("Error:", err.message);
         }
-        setError('Failed to fetch orders');
+        setError("Failed to fetch orders");
       } finally {
         setLoading(false);
       }
@@ -44,26 +46,26 @@ const OrderHistory = () => {
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
-      case 'pending':
-        return 'status-pending';
-      case 'accepted':
-        return 'status-accepted';
-      case 'in-transit':
-        return 'status-in-transit';
-      case 'delivered':
-        return 'status-delivered';
-      case 'cancelled':
-        return 'status-cancelled';
+      case "pending":
+        return "status-pending";
+      case "accepted":
+        return "status-accepted";
+      case "in-transit":
+        return "status-in-transit";
+      case "delivered":
+        return "status-delivered";
+      case "cancelled":
+        return "status-cancelled";
       default:
-        return 'status-pending';
+        return "status-pending";
     }
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
     }).format(date);
   };
 
@@ -74,11 +76,7 @@ const OrderHistory = () => {
         <p className="orders-subtitle">Track and manage all your orders</p>
       </div>
 
-      {error && (
-        <div className="error-alert">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-alert">{error}</div>}
 
       {loading ? (
         <div className="loading-spinner">
@@ -91,14 +89,16 @@ const OrderHistory = () => {
         </div>
       ) : (
         <div className="orders-grid">
-          {orders.map(order => (
+          {orders.map((order) => (
             <div key={order._id} className="order-card">
               <div className="order-card-content">
                 <div className="order-header">
                   <div className="order-info">
                     <div>
                       <h3 className="order-id">
-                        <span className="order-id-badge">#{order._id.substring(order._id.length - 6)}</span>
+                        <span className="order-id-badge">
+                          #{order._id.substring(order._id.length - 6)}
+                        </span>
                         Order Details
                       </h3>
                     </div>
@@ -113,8 +113,13 @@ const OrderHistory = () => {
                       </div>
                     )}
                   </div>
-                  <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  <span
+                    className={`status-badge ${getStatusBadgeClass(
+                      order.status
+                    )}`}
+                  >
+                    {order.status.charAt(0).toUpperCase() +
+                      order.status.slice(1)}
                   </span>
                 </div>
 
@@ -126,15 +131,40 @@ const OrderHistory = () => {
                         <span className="item-quantity">{item.quantity}x</span>
                         <span>{item.name}</span>
                       </div>
-                      <span className="item-price">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="item-price">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </span>
                     </div>
                   ))}
                 </div>
 
                 <div className="order-total">
                   <span className="total-label">Total Amount</span>
-                  <span className="total-amount">${order.total.toFixed(2)}</span>
+                  <span className="total-amount">
+                    ${order.total.toFixed(2)}
+                  </span>
                 </div>
+                {order.deliveryMethod === "drone" && (
+                  <button
+                    className="track-drone-btn"
+                    onClick={() =>
+                      navigate(`/orders/${order._id}/drone-tracking`)
+                    }
+                    style={{
+                      marginTop: "12px",
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      backgroundColor: "#2563eb",
+                      color: "white",
+                      cursor: "pointer",
+                      width: "100%",
+                      border: "none",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    🚁 Track Drone Delivery
+                  </button>
+                )}
               </div>
             </div>
           ))}

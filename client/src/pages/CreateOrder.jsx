@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CartContext } from "../CartContext";
-import '../styles/CreateOrder.css';
+import "../styles/CreateOrder.css";
 import {
   Elements,
   PaymentElement,
@@ -117,6 +117,8 @@ const CreateOrder = () => {
     address: { line1: "", city: "", state: "", postal_code: "", country: "US" },
   });
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState("delivery");
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -236,9 +238,7 @@ const CreateOrder = () => {
         setDeliveryLocation(coords);
 
         try {
-          const response = await axios.get(
-           
-          );
+          const response = await axios.get();
 
           if (response.data.results && response.data.results.length > 0) {
             setAddress(response.data.results[0].formatted_address);
@@ -342,6 +342,7 @@ const CreateOrder = () => {
           items: orderData.items,
           deliveryLocation: orderData.deliveryLocation,
           paymentIntentId,
+          deliveryMethod,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -394,13 +395,9 @@ const CreateOrder = () => {
       </header>
 
       <main className="create-order-main">
-        <h2 className="create-order-title">
-          Create Order
-        </h2>
+        <h2 className="create-order-title">Create Order</h2>
 
-        {error && (
-          <div className="error-alert">{error}</div>
-        )}
+        {error && <div className="error-alert">{error}</div>}
 
         <div className="create-order-grid">
           <div className="order-card">
@@ -420,15 +417,12 @@ const CreateOrder = () => {
           </div>
 
           <div className="lg:col-span-2">
-            <h3 style={{marginBottom: '1rem'}}>Menu Items</h3>
+            <h3 style={{ marginBottom: "1rem" }}>Menu Items</h3>
             {selectedRestaurant ? (
               menuItems.length > 0 ? (
                 <div className="menu-grid">
                   {menuItems.map((item) => (
-                    <div
-                      key={item._id}
-                      className="menu-item-card"
-                    >
+                    <div key={item._id} className="menu-item-card">
                       <div>
                         <h4 className="menu-item-name">{item.name}</h4>
                         <p className="menu-item-description">
@@ -464,9 +458,7 @@ const CreateOrder = () => {
           <h3>Delivery Location</h3>
           <div className="delivery-section">
             <div className="delivery-input-wrapper">
-              <label className="form-label">
-                Delivery Address
-              </label>
+              <label className="form-label">Delivery Address</label>
               <input
                 type="text"
                 value={address}
@@ -600,6 +592,18 @@ const CreateOrder = () => {
 
         <div className="mt-10 bg-gray-900 rounded-lg shadow-lg p-6">
           <h3 className="text-xl font-bold mb-4">Your Order</h3>
+          <div className="mb-6">
+            <label className="block text-gray-400 mb-2">Delivery Method</label>
+            <select
+              value={deliveryMethod}
+              onChange={(e) => setDeliveryMethod(e.target.value)}
+              className="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="delivery">🚚 Delivery (Người giao hàng)</option>
+              <option value="drone">🚁 Drone Delivery</option>
+            </select>
+          </div>
+
           {cart.length > 0 ? (
             <>
               {displayedCartItems.length === 0 && selectedRestaurant ? (

@@ -76,6 +76,17 @@ function mountRoutes(app) {
     })
   );
 
+  // 🚁 Drone Service
+  app.use(
+    "/drone",
+    createProxyMiddleware({
+      target: "http://drone-service:5009",
+      changeOrigin: true,
+      pathRewrite: { "^/drone": "" },
+      logLevel: "debug",
+    })
+  );
+
   // ✅ Payment Service
   app.use(
     "/payment",

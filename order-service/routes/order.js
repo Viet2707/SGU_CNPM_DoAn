@@ -54,27 +54,32 @@ router.post(
   verifyToken,
   allowRoles("customer"),
   async (req, res) => {
-    const { restaurantId, items, deliveryLocation, paymentIntentId } = req.body;
+    // 🔥 FIX QUAN TRỌNG – destructuring data từ FE
+    const { restaurantId, items, paymentIntentId, deliveryMethod } = req.body;
+
+    // ⭐ Fake Restaurant
+    const restaurantLocation = {
+      latitude: 10.779247,
+      longitude: 106.699412,
+      address: "Fake Restaurant",
+    };
+
+    // ⭐ Fake Customer
+    const deliveryLocation = {
+      latitude: 10.781671,
+      longitude: 106.705093,
+      address: "Fake Customer",
+    };
 
     if (!restaurantId || !Array.isArray(items) || items.length === 0)
       return res
         .status(400)
         .json({ message: "Restaurant ID and items are required" });
 
-    if (
-      !deliveryLocation ||
-      typeof deliveryLocation.latitude !== "number" ||
-      typeof deliveryLocation.longitude !== "number"
-    )
-      return res
-        .status(400)
-        .json({ message: "Valid delivery location required" });
-
     if (!paymentIntentId)
       return res.status(400).json({ message: "Payment Intent ID is required" });
 
     try {
-      // ✅ Verify payment
       const paymentResponse = await axios.get(
         `http://payment-service:5008/verify-payment/${paymentIntentId}`,
         { headers: { Authorization: req.headers.authorization } }
@@ -83,34 +88,26 @@ router.post(
       if (paymentResponse.data.status !== "succeeded")
         return res.status(400).json({ message: "Payment not successful" });
 
-      // ✅ Save order
       const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
       const order = new Order({
         customerId: req.user.id,
         restaurantId,
         items,
         total,
         deliveryLocation,
+        restaurantLocation,
         paymentIntentId,
+        deliveryMethod: deliveryMethod || "delivery",
       });
+
       await order.save();
 
-      // ✅ Update payment service
       await axios.post(
         `http://payment-service:5008/update/${paymentIntentId}`,
         { orderId: order._id },
         { headers: { Authorization: req.headers.authorization } }
       );
-
-      // 🔔 Publish event: order.created
-      await publishEvent("order.created", {
-        orderId: order._id.toString(),
-        customerId: order.customerId,
-        restaurantId: order.restaurantId,
-        items: order.items,
-        total: order.total,
-        status: order.status,
-      });
 
       res.status(201).json({ message: "Order created successfully", order });
     } catch (err) {
@@ -198,12 +195,27 @@ router.patch(
     // 🔔 RabbitMQ event theo vai trò + status
     try {
       if (req.user.role === "restaurant" && status === "accepted") {
-        // Nhà hàng accept đơn
+        // ⚠️ Giữ nguyên event cũ (delivery-service vẫn chạy)
         await publishEvent("order.accepted", {
           orderId: order._id.toString(),
           restaurantId: order.restaurantId,
           customerId: order.customerId,
         });
+
+        // ⭐ NEW: tách 2 event riêng theo deliveryMethod
+        if (order.deliveryMethod === "drone") {
+          await publishEvent("order.accepted.drone", {
+            orderId: order._id.toString(),
+            restaurantId: order.restaurantId,
+            customerId: order.customerId,
+          });
+        } else {
+          await publishEvent("order.accepted.delivery", {
+            orderId: order._id.toString(),
+            restaurantId: order.restaurantId,
+            customerId: order.customerId,
+          });
+        }
       }
 
       if (req.user.role === "delivery") {
@@ -296,5 +308,57 @@ router.get(
 // `routes/admin.js`. We remove the duplicate implementation here to
 // avoid route conflicts so that the dedicated admin router handles
 // authentication/enrichment consistently.
+
+// ===========================
+// 📦 Lấy chi tiết 1 order (dùng cho tracking)
+// ===========================
+// LẤY 1 ORDER THEO ID
+router.get("/orders/:id", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    res.json(order);
+  } catch (error) {
+    console.error("GET /orders/:id error", error.message);
+    res.status(500).json({ message: "Error fetching order" });
+  }
+});
+
+// ===========================
+// 🚁 Drone cập nhật vị trí
+// ===========================
+router.patch("/orders/:id/drone-location", async (req, res) => {
+  try {
+    const { latitude, longitude } = req.body;
+
+    await Order.findByIdAndUpdate(req.params.id, {
+      droneLocation: { latitude, longitude },
+      status: "in-transit",
+    });
+
+    res.json({ message: "Drone location updated" });
+  } catch (err) {
+    console.error("Failed to update drone location:", err.message);
+    res.status(500).json({ message: "Error updating drone location" });
+  }
+});
+
+// ===========================
+// 🚁 Drone báo đã giao xong
+// ===========================
+router.patch("/orders/:id/drone-delivered", async (req, res) => {
+  try {
+    await Order.findByIdAndUpdate(req.params.id, {
+      status: "delivered",
+    });
+
+    res.json({ message: "Order marked delivered by drone" });
+  } catch (err) {
+    console.error("Failed to mark delivered:", err.message);
+    res.status(500).json({ message: "Error updating order status" });
+  }
+});
 
 module.exports = router;
