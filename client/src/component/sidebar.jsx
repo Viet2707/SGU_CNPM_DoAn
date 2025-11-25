@@ -288,6 +288,53 @@ const Sidebar = ({ user }) => {
               </>
             )}
 
+            {/* Admin Links */}
+            {isAdmin && (
+              <>
+                <li>
+                  <Link
+                    to="/admin/dashboard"
+                    className={`flex items-center p-3 rounded-md transition-colors duration-200
+                               ${
+                                 isActive("/admin/dashboard")
+                                   ? "bg-yellow-500 text-black"
+                                   : "hover:bg-gray-800"
+                               }`}
+                  >
+                    <Home size={20} />
+                    <span
+                      className={`ml-3 ${
+                        !isOpen && window.innerWidth < 1024 ? "hidden" : "block"
+                      }`}
+                    >
+                      Admin Dashboard
+                    </span>
+                  </Link>
+                </li>
+
+                <li>
+                  <Link
+                    to="/admin/drones"
+                    className={`flex items-center p-3 rounded-md transition-colors duration-200
+                               ${
+                                 isActive("/admin/drones")
+                                   ? "bg-yellow-500 text-black"
+                                   : "hover:bg-gray-800"
+                               }`}
+                  >
+                    <Truck size={20} />
+                    <span
+                      className={`ml-3 ${
+                        !isOpen && window.innerWidth < 1024 ? "hidden" : "block"
+                      }`}
+                    >
+                      Drone Management
+                    </span>
+                  </Link>
+                </li>
+              </>
+            )}
+
             <li className="mt-8">
               <button
                 onClick={handleLogout}

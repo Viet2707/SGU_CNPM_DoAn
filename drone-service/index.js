@@ -1,23 +1,32 @@
 // drone-service/index.js
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 require("dotenv").config();
 
 const axios = require("axios"); // 🔹 NHỚ IMPORT axios
-
 const { subscribeEvent, publishEvent } = require("./rabbitmq");
 const droneRoutes = require("./routes/drone");
+const adminDroneRoutes = require("./routes/adminDrone");
+const Drone = require("./models/Drone");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🔗 Connect Mongo Atlas (dronedb)
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("Drone DB connected"))
+  .catch((err) => console.error("Drone DB error:", err.message));
+
 app.use("/", droneRoutes);
+app.use("/admin/drones", adminDroneRoutes);
 
 // =============================
 // 🔧 Hàm tính bước di chuyển
 // =============================
-function moveTowards(current, target, step = 0.0005) {
+function moveTowards(current, target, step = 0.002) {
   const dx = target.latitude - current.latitude;
   const dy = target.longitude - current.longitude;
 
@@ -55,10 +64,33 @@ subscribeEvent(
         return;
       }
 
-      // 2. Drone bắt đầu tại vị trí nhà hàng
-      let dronePos = {
+      // 🔍 Tìm drone rảnh
+      const drone = await Drone.findOne({ status: "idle", isActive: true });
+
+      if (!drone) {
+        console.error("❌ No idle drone available!");
+        return;
+      }
+
+      // 🟡 Cập nhật trạng thái drone → in-transit
+      drone.status = "in-transit";
+      drone.assignedOrderId = payload.orderId;
+
+      // Nếu drone đã có baseLocation thì dùng
+      // Nếu chưa thì đặt tại nhà hàng
+      drone.currentLocation = drone.baseLocation || {
         latitude: restaurant.latitude,
         longitude: restaurant.longitude,
+      };
+
+      await drone.save();
+
+      console.log("🚁 Assigned drone:", drone.code);
+
+      // 2. Drone bắt đầu tại vị trí nhà hàng
+      let dronePos = {
+        latitude: drone.currentLocation.latitude,
+        longitude: drone.currentLocation.longitude,
       };
 
       console.log("🚁 Drone starting at:", dronePos);
@@ -75,6 +107,13 @@ subscribeEvent(
           dronePos = moveTowards(dronePos, customer);
 
           console.log("🚁 Drone moving:", dronePos);
+          // 🔵 Cập nhật vị trí drone trong DB
+          drone.currentLocation = {
+            latitude: dronePos.latitude,
+            longitude: dronePos.longitude,
+          };
+
+          await drone.save();
 
           // Cập nhật droneLocation + status vào order-service
           await axios.patch(
@@ -87,8 +126,8 @@ subscribeEvent(
 
           // Nếu đã tới nơi thì dừng
           if (
-            Math.abs(dronePos.latitude - customer.latitude) < 0.0001 &&
-            Math.abs(dronePos.longitude - customer.longitude) < 0.0001
+            Math.abs(dronePos.latitude - customer.latitude) < 0.0005 &&
+            Math.abs(dronePos.longitude - customer.longitude) < 0.0005
           ) {
             clearInterval(interval);
 
@@ -98,11 +137,21 @@ subscribeEvent(
             );
 
             console.log("🎉 Drone delivered order:", payload.orderId);
+            // 🟢 Reset drone
+            drone.status = "idle";
+            drone.assignedOrderId = null;
+
+            // Trả về baseLocation nếu có
+            if (drone.baseLocation) {
+              drone.currentLocation = drone.baseLocation;
+            }
+
+            await drone.save();
           }
         } catch (err) {
           console.error("❌ Error while moving drone:", err.message);
         }
-      }, 3000);
+      }, 1000);
     } catch (err) {
       console.error("❌ Error in drone-service event handler:", err.message);
     }

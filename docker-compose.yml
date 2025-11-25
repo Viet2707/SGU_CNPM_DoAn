@@ -27,11 +27,15 @@ services:
       - PORT=5009
       - ORDER_SERVICE_URL=http://order-service:5003
       - RABBITMQ_URL=amqp://rabbitmq:5672
+      - MONGO_URI=mongodb+srv://vietnx2707_db_user:123@cluster0.1ijcrzp.mongodb.net/dronedb?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=supersecret123 # để verify token admin
     depends_on:
+      - mongo
       - order-service
       - rabbitmq
     networks:
       - app-net
+    restart: always
 
   # 🍽️ Restaurant Service
   restaurant-service:

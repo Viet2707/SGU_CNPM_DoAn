@@ -15,6 +15,7 @@ import HomeAll from "./pages/HomeAll";
 import ProtectedLayout from "./component/ProtectedLayout";
 import { CartProvider } from "./CartContext";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminDroneList from "./pages/AdminDroneList";
 import DroneTracking from "./pages/DroneTracking";
 
 const App = () => {
@@ -50,6 +51,7 @@ const App = () => {
 
           <Route element={<ProtectedLayout allowedRoles={["admin"]} />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/drones" element={<AdminDroneList />} />
           </Route>
         </Routes>
       </BrowserRouter>
