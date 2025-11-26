@@ -52,6 +52,19 @@ const orderSchema = new mongoose.Schema({
     longitude: Number,
   },
 
+  // ✅ Thêm drone assigned info
+  droneId: { type: String, default: null },
+  drone: {
+    droneId: String,
+    code: String,
+    name: String,
+    batteryPercent: Number,
+    currentLocation: {
+      latitude: Number,
+      longitude: Number,
+    },
+  },
+
   paymentIntentId: String,
 });
 

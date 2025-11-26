@@ -87,6 +87,25 @@ subscribeEvent(
 
       console.log("🚁 Assigned drone:", drone.code);
 
+      // GỌI ORDER-SERVICE để gán drone vào order
+      try {
+        await axios.patch(
+          `${ORDER_SERVICE_URL}/orders/${payload.orderId}/assign-drone`,
+          {
+            droneId: drone._id,
+            drone: {
+              droneId: drone._id,
+              code: drone.code,
+              name: drone.name,
+              batteryPercent: drone.batteryPercent,
+              currentLocation: drone.currentLocation,
+            },
+          }
+        );
+      } catch (err) {
+        console.error("❌ Failed to notify order-service about assigned drone:", err.message);
+      }
+
       // 2. Drone bắt đầu tại vị trí nhà hàng
       let dronePos = {
         latitude: drone.currentLocation.latitude,
@@ -121,6 +140,7 @@ subscribeEvent(
             {
               latitude: dronePos.latitude,
               longitude: dronePos.longitude,
+              droneId: drone._id,
             }
           );
 

@@ -331,12 +331,18 @@ router.get("/orders/:id", async (req, res) => {
 // ===========================
 router.patch("/orders/:id/drone-location", async (req, res) => {
   try {
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, droneId, drone } = req.body;
 
-    await Order.findByIdAndUpdate(req.params.id, {
+    const update = {
       droneLocation: { latitude, longitude },
       status: "in-transit",
-    });
+    };
+
+    // Nếu phía drone-service gửi thông tin drone, lưu vào order
+    if (droneId) update.droneId = droneId;
+    if (drone) update.drone = drone;
+
+    await Order.findByIdAndUpdate(req.params.id, update);
 
     res.json({ message: "Drone location updated" });
   } catch (err) {
@@ -358,6 +364,32 @@ router.patch("/orders/:id/drone-delivered", async (req, res) => {
   } catch (err) {
     console.error("Failed to mark delivered:", err.message);
     res.status(500).json({ message: "Error updating order status" });
+  }
+});
+
+// ===========================
+// 🚁 Cập nhật drone được assign vào order
+// ===========================
+router.patch("/orders/:id/assign-drone", async (req, res) => {
+  try {
+    const { droneId, drone } = req.body;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    order.droneId = droneId || order.droneId;
+    if (drone) order.drone = drone;
+
+    // nếu là drone method thì set deliveryMethod nếu chưa
+    if (!order.deliveryMethod || order.deliveryMethod !== "drone") {
+      order.deliveryMethod = "drone";
+    }
+
+    await order.save();
+    res.json({ message: "Drone assigned to order", order });
+  } catch (err) {
+    console.error("Failed to assign drone:", err.message);
+    res.status(500).json({ message: "Error assigning drone to order" });
   }
 });
 

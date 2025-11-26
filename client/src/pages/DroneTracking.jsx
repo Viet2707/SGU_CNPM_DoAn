@@ -116,6 +116,24 @@ export default function DroneTracking() {
     <div style={{ padding: 20 }}>
       <h2 style={{ color: "white" }}>Drone Delivery Tracking</h2>
 
+      {/* Thông tin order/restaurant/customer/drone */}
+      <div style={{ color: "white", marginBottom: 10 }}>
+        <div>
+          <strong>Order Id:</strong> {tracking.orderId}
+        </div>
+        <div>
+          <strong>Restaurant:</strong> {tracking.restaurantName || tracking.restaurantId} (ID: {tracking.restaurantId})
+        </div>
+        <div>
+          <strong>Customer Id:</strong> {tracking.customerId}
+        </div>
+        {tracking?.drone && (
+          <div>
+            <strong>Drone:</strong> {tracking.drone.name || tracking.drone.details?.name || tracking.drone.details?.code || tracking.drone.name} (ID: {tracking.drone.id}) — <em>{tracking.orderStatus}</em>
+          </div>
+        )}
+      </div>
+
       <div style={{ width: "100%", height: "600px" }}>
         <MapContainer
           center={restaurantPos}
