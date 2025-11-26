@@ -122,14 +122,21 @@ export default function DroneTracking() {
           <strong>Order Id:</strong> {tracking.orderId}
         </div>
         <div>
-          <strong>Restaurant:</strong> {tracking.restaurantName || tracking.restaurantId} (ID: {tracking.restaurantId})
+          <strong>Restaurant:</strong>{" "}
+          {tracking.restaurantName || tracking.restaurantId} (ID:{" "}
+          {tracking.restaurantId})
         </div>
         <div>
           <strong>Customer Id:</strong> {tracking.customerId}
         </div>
         {tracking?.drone && (
           <div>
-            <strong>Drone:</strong> {tracking.drone.name || tracking.drone.details?.name || tracking.drone.details?.code || tracking.drone.name} (ID: {tracking.drone.id}) — <em>{tracking.orderStatus}</em>
+            <strong>Drone:</strong>{" "}
+            {tracking.drone.name ||
+              tracking.drone.details?.name ||
+              tracking.drone.details?.code ||
+              tracking.drone.name}{" "}
+            (ID: {tracking.drone.id}) — <em>{tracking.orderStatus}</em>
           </div>
         )}
       </div>

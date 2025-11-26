@@ -51,7 +51,9 @@ router.get("/tracking/:orderId", async (req, res) => {
         }
       } else {
         // fallback: try to find by assignedOrderId
-        const d = await require("../models/Drone").findOne({ assignedOrderId: order._id });
+        const d = await require("../models/Drone").findOne({
+          assignedOrderId: order._id,
+        });
         if (d) {
           droneDetails = {
             id: d._id,
@@ -70,9 +72,13 @@ router.get("/tracking/:orderId", async (req, res) => {
     // Fetch restaurant name from restaurant-service if possible
     let restaurantName = null;
     try {
-      const restRes = await axios.get(`${RESTAURANT_SERVICE_URL}/api/restaurants`);
+      const restRes = await axios.get(
+        `${RESTAURANT_SERVICE_URL}/api/restaurants`
+      );
       if (Array.isArray(restRes.data)) {
-        const r = restRes.data.find((x) => String(x._id) === String(order.restaurantId));
+        const r = restRes.data.find(
+          (x) => String(x._id) === String(order.restaurantId)
+        );
         if (r) restaurantName = r.name;
       }
     } catch (e) {

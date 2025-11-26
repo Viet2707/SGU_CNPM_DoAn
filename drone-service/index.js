@@ -103,7 +103,10 @@ subscribeEvent(
           }
         );
       } catch (err) {
-        console.error("❌ Failed to notify order-service about assigned drone:", err.message);
+        console.error(
+          "❌ Failed to notify order-service about assigned drone:",
+          err.message
+        );
       }
 
       // 2. Drone bắt đầu tại vị trí nhà hàng
