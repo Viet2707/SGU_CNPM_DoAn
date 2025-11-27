@@ -22,6 +22,8 @@ const droneSchema = new mongoose.Schema(
       address: String,
     },
     assignedOrderId: { type: String, default: null },
+    // When drone arrives at customer and waits for customer confirmation
+    waitingForCustomerConfirmation: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

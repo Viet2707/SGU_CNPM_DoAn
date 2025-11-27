@@ -47,6 +47,7 @@ router.get("/tracking/:orderId", async (req, res) => {
             status: d.status,
             batteryPercent: d.batteryPercent,
             currentLocation: d.currentLocation,
+            waitingForCustomerConfirmation: d.waitingForCustomerConfirmation,
           };
         }
       } else {
@@ -120,3 +121,29 @@ router.get("/tracking/:orderId", async (req, res) => {
 });
 
 module.exports = router;
+
+// ==========================
+// ✅ Xác nhận đã giao bởi khách
+// ==========================
+router.patch("/drones/:id/confirm-delivered", async (req, res) => {
+  try {
+    const Drone = require("../models/Drone");
+    const drone = await Drone.findById(req.params.id);
+    if (!drone) return res.status(404).json({ message: "Drone not found" });
+
+    drone.status = "idle";
+    drone.assignedOrderId = null;
+    drone.waitingForCustomerConfirmation = false;
+
+    // If the drone has base location, set currentLocation back to base
+    if (drone.baseLocation) {
+      drone.currentLocation = drone.baseLocation;
+    }
+
+    await drone.save();
+    res.json({ message: "Drone confirmed delivered and is idle", drone });
+  } catch (err) {
+    console.error("Failed to confirm drone delivered:", err.message);
+    res.status(500).json({ message: "Error confirming delivered" });
+  }
+});

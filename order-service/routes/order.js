@@ -6,6 +6,7 @@ const axios = require("axios");
 const { publishEvent } = require("../rabbitmq"); // 🔔 RabbitMQ
 
 const NOTIFY_SERVICE_URL = process.env.NOTIFY_SERVICE_URL;
+const DRONE_SERVICE_URL = process.env.DRONE_SERVICE_URL || "http://drone-service:5009";
 
 /* ===========================
    🧍 CUSTOMER ROUTES
@@ -356,11 +357,24 @@ router.patch("/orders/:id/drone-location", async (req, res) => {
 // ===========================
 router.patch("/orders/:id/drone-delivered", async (req, res) => {
   try {
-    await Order.findByIdAndUpdate(req.params.id, {
-      status: "delivered",
-    });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    res.json({ message: "Order marked delivered by drone" });
+    order.status = "delivered";
+    await order.save();
+
+    // Notify drone service to set drone as idle if drone assigned
+    try {
+      if (order.droneId) {
+        // Call drone-service endpoint to mark drone idle/confirmed
+        await axios.patch(`${DRONE_SERVICE_URL}/drones/${order.droneId}/confirm-delivered`);
+      }
+    } catch (err) {
+      console.error("Failed to notify drone-service:", err.message);
+      // Not fatal, still return success for order update
+    }
+
+    res.json({ message: "Order marked delivered by drone", order });
   } catch (err) {
     console.error("Failed to mark delivered:", err.message);
     res.status(500).json({ message: "Error updating order status" });

@@ -43,6 +43,7 @@ export default function DroneTracking() {
 
   const [tracking, setTracking] = useState(null);
   const [dronePos, setDronePos] = useState(null);
+  const [hasArrived, setHasArrived] = useState(false);
 
   // Gọi API 1 lần để lấy vị trí restaurant + customer
   useEffect(() => {
@@ -52,6 +53,23 @@ export default function DroneTracking() {
           `http://localhost:8000/drone/tracking/${orderId}`
         );
         setTracking(res.data);
+        // We intentionally do not set drone position from server here —
+        // the frontend animates the icon from restaurant -> customer for UX.
+        // Nếu server đã báo drone tới nơi và chờ xác nhận thì set hasArrived
+        if (
+          res.data?.drone?.details?.waitingForCustomerConfirmation ||
+          (res.data?.drone?.currentLocation?.latitude &&
+            Math.abs(
+              res.data.drone.currentLocation.latitude -
+                res.data.customer.latitude
+            ) < 0.0005 &&
+            Math.abs(
+              res.data.drone.currentLocation.longitude -
+                res.data.customer.longitude
+            ) < 0.0005)
+        ) {
+          setHasArrived(true);
+        }
       } catch (err) {
         console.log("Fail load tracking", err);
       }
@@ -79,7 +97,20 @@ export default function DroneTracking() {
       return;
     }
 
-    // Bắt đầu tại nhà hàng
+    // If the drone is already at the customer (server says waiting or currentLocation close), set to customer and don't animate
+    const serverDroneLocation = tracking.drone?.currentLocation;
+    const isDroneCloseToCustomer =
+      serverDroneLocation &&
+      Math.abs(serverDroneLocation.latitude - tracking.customer.latitude) < 0.0005 &&
+      Math.abs(serverDroneLocation.longitude - tracking.customer.longitude) < 0.0005;
+
+    if (hasArrived || tracking.drone?.details?.waitingForCustomerConfirmation || isDroneCloseToCustomer) {
+      setDronePos(customerPos);
+      setHasArrived(true);
+      return;
+    }
+
+    // Bắt đầu tại nhà hàng (simulate start at restaurant)
     setDronePos(restaurantPos);
 
     const steps = 100; // số bước bay (càng nhiều càng mượt)
@@ -98,25 +129,8 @@ export default function DroneTracking() {
         setDronePos(customerPos);
         clearInterval(interval);
 
-        // Khi drone tới nơi: thông báo backend và cập nhật UI thành "delivered"
-        (async () => {
-          try {
-            if (tracking.orderStatus !== "delivered") {
-              // Note: order-service routes are mounted under /order on the API gateway
-              await axios.patch(
-                `http://localhost:8000/order/orders/${orderId}/drone-delivered`
-              );
-
-              // Cập nhật trạng thái trên UI ngay lập tức
-              setTracking((prev) => ({
-                ...(prev || {}),
-                orderStatus: "delivered",
-              }));
-            }
-          } catch (err) {
-            console.error("Failed to mark order delivered:", err);
-          }
-        })();
+            // Khi drone tới nơi: dừng animation và hiện nút xác nhận cho khách hàng
+            setHasArrived(true);
 
         return;
       }
@@ -128,7 +142,7 @@ export default function DroneTracking() {
     }, speedMs);
 
     return () => clearInterval(interval);
-  }, [tracking, orderId]);
+  }, [tracking, orderId, hasArrived]);
 
   if (!tracking || !dronePos)
     return <div style={{ color: "white" }}>Loading...</div>;
@@ -164,6 +178,43 @@ export default function DroneTracking() {
               tracking.drone.details?.code ||
               tracking.drone.name}{" "}
             (ID: {tracking.drone.id}) — <em>{tracking.orderStatus}</em>
+            {hasArrived && tracking.orderStatus !== "delivered" && (
+              <span style={{ marginLeft: 12, color: "#ffd54f" }}>
+                Đang chờ xác nhận của khách
+              </span>
+            )}
+            {hasArrived && tracking.orderStatus !== "delivered" && (
+              <button
+                style={{
+                  marginLeft: 12,
+                  padding: "6px 12px",
+                  background: "#28a745",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                }}
+                onClick={async () => {
+                  try {
+                    await axios.patch(
+                      `http://localhost:8000/order/orders/${orderId}/drone-delivered`
+                    );
+
+                    // lấy trạng thái cập nhật từ server để refresh drone state
+                    const updated = await axios.get(
+                      `http://localhost:8000/drone/tracking/${orderId}`
+                    );
+                    setTracking(updated.data);
+                    setHasArrived(false);
+                  } catch (err) {
+                    console.error("Failed to confirm delivered:", err);
+                    alert("Failed to confirm delivered. Please try again.");
+                  }
+                }}
+              >
+                Xác nhận đã giao
+              </button>
+            )}
           </div>
         )}
       </div>

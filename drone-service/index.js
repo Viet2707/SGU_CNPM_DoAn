@@ -154,22 +154,15 @@ subscribeEvent(
           ) {
             clearInterval(interval);
 
-            // Báo đơn đã giao xong
-            await axios.patch(
-              `${ORDER_SERVICE_URL}/orders/${payload.orderId}/drone-delivered`
-            );
-
-            console.log("🎉 Drone delivered order:", payload.orderId);
-            // 🟢 Reset drone
-            drone.status = "idle";
-            drone.assignedOrderId = null;
-
-            // Trả về baseLocation nếu có
-            if (drone.baseLocation) {
-              drone.currentLocation = drone.baseLocation;
-            }
-
+            // Drone đã tới vị trí khách hàng – chờ khách xác nhận giao hàng
+            drone.waitingForCustomerConfirmation = true;
+            // giữ drone.status là in-transit cho đến khi khách xác nhận
             await drone.save();
+
+            console.log(
+              "🟡 Drone arrived and is waiting for customer confirmation:",
+              payload.orderId
+            );
           }
         } catch (err) {
           console.error("❌ Error while moving drone:", err.message);
