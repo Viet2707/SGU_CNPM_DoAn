@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const { assignDroneToOrder } = require("../utils/assignDrone");
 
 const ORDER_SERVICE_URL =
   process.env.ORDER_SERVICE_URL || "http://order-service:5003";
@@ -117,6 +118,56 @@ router.get("/tracking/:orderId", async (req, res) => {
   } catch (err) {
     console.error("Error fetching drone tracking:", err.message);
     res.status(500).json({ message: "Failed to fetch drone tracking" });
+  }
+});
+
+
+// ==========================
+// ✅ Xác nhận đã giao bởi khách
+// ==========================
+router.patch("/drones/:id/confirm-delivered", async (req, res) => {
+  try {
+    const Drone = require("../models/Drone");
+    const drone = await Drone.findById(req.params.id);
+    if (!drone) return res.status(404).json({ message: "Drone not found" });
+
+    drone.status = "idle";
+    drone.assignedOrderId = null;
+    drone.waitingForCustomerConfirmation = false;
+
+    // If the drone has base location, set currentLocation back to base
+    if (drone.baseLocation) {
+      drone.currentLocation = drone.baseLocation;
+    }
+
+    await drone.save();
+
+    res.json({ message: "Drone confirmed delivered and is idle", drone });
+
+    // After drone becomes idle, try to auto-assign the next available order for drones
+    try {
+      const ORDER_SERVICE_URL =
+        process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+      const availRes = await axios.get(
+        `${ORDER_SERVICE_URL}/orders/available/drone`
+      );
+      const data = availRes.data;
+      // Support both array & single-object response
+      let orderAvailable = null;
+      if (Array.isArray(data) && data.length) orderAvailable = data[0];
+      if (data && data._id) orderAvailable = data;
+
+      if (orderAvailable) {
+        console.log("Found available order to auto-assign:", orderAvailable._id);
+        // call helper to assign
+        await assignDroneToOrder(drone, orderAvailable);
+      }
+    } catch (e) {
+      console.warn("Auto-assign after drone idle failed:", e.message);
+    }
+  } catch (err) {
+    console.error("Failed to confirm drone delivered:", err.message);
+    res.status(500).json({ message: "Error confirming delivered" });
   }
 });
 

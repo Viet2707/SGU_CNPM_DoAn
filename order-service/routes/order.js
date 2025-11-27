@@ -329,6 +329,26 @@ router.get("/orders/:id", async (req, res) => {
 });
 
 // ===========================
+// 🚁 Lấy danh sách order đang accepted và chưa có drone (cho drone-service)
+// ===========================
+router.get("/orders/available/drone", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const orders = await Order.find({
+      status: "accepted",
+      deliveryMethod: "drone",
+      $or: [{ droneId: null }, { droneId: { $exists: false } }],
+    })
+      .sort({ createdAt: 1 })
+      .limit(limit);
+    res.json(orders);
+  } catch (err) {
+    console.error("Error fetching available drone orders:", err.message);
+    res.status(500).json({ message: "Error fetching available drone orders" });
+  }
+});
+
+// ===========================
 // 🚁 Drone cập nhật vị trí
 // ===========================
 router.patch("/orders/:id/drone-location", async (req, res) => {
@@ -394,6 +414,12 @@ router.patch("/orders/:id/assign-drone", async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
+    // If already assigned, return conflict to avoid double assignment
+    if (order.droneId && String(order.droneId) !== String(droneId)) {
+      return res
+        .status(409)
+        .json({ message: "Order already has a drone assigned" });
+    }
     order.droneId = droneId || order.droneId;
     if (drone) order.drone = drone;
 

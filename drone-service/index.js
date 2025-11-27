@@ -6,6 +6,7 @@ require("dotenv").config();
 
 const axios = require("axios"); // 🔹 NHỚ IMPORT axios
 const { subscribeEvent, publishEvent } = require("./rabbitmq");
+const { assignDroneToOrder } = require("./utils/assignDrone");
 const droneRoutes = require("./routes/drone");
 const adminDroneRoutes = require("./routes/adminDrone");
 const Drone = require("./models/Drone");
@@ -72,102 +73,9 @@ subscribeEvent(
         return;
       }
 
-      // 🟡 Cập nhật trạng thái drone → in-transit
-      drone.status = "in-transit";
-      drone.assignedOrderId = payload.orderId;
-
-      // Nếu drone đã có baseLocation thì dùng
-      // Nếu chưa thì đặt tại nhà hàng
-      drone.currentLocation = drone.baseLocation || {
-        latitude: restaurant.latitude,
-        longitude: restaurant.longitude,
-      };
-
-      await drone.save();
-
-      console.log("🚁 Assigned drone:", drone.code);
-
-      // GỌI ORDER-SERVICE để gán drone vào order
-      try {
-        await axios.patch(
-          `${ORDER_SERVICE_URL}/orders/${payload.orderId}/assign-drone`,
-          {
-            droneId: drone._id,
-            drone: {
-              droneId: drone._id,
-              code: drone.code,
-              name: drone.name,
-              batteryPercent: drone.batteryPercent,
-              currentLocation: drone.currentLocation,
-            },
-          }
-        );
-      } catch (err) {
-        console.error(
-          "❌ Failed to notify order-service about assigned drone:",
-          err.message
-        );
-      }
-
-      // 2. Drone bắt đầu tại vị trí nhà hàng
-      let dronePos = {
-        latitude: drone.currentLocation.latitude,
-        longitude: drone.currentLocation.longitude,
-      };
-
-      console.log("🚁 Drone starting at:", dronePos);
-
-      // 3. Gửi event đánh dấu "đang giao" (in-transit) – optional
-      await publishEvent("delivery.in_transit", {
-        orderId: payload.orderId,
-        status: "in-transit",
-      });
-
-      // 4. Cứ 3 giây thì drone bay thêm 1 đoạn & cập nhật lên order-service
-      const interval = setInterval(async () => {
-        try {
-          dronePos = moveTowards(dronePos, customer);
-
-          console.log("🚁 Drone moving:", dronePos);
-          // 🔵 Cập nhật vị trí drone trong DB
-          drone.currentLocation = {
-            latitude: dronePos.latitude,
-            longitude: dronePos.longitude,
-          };
-
-          await drone.save();
-
-          // Cập nhật droneLocation + status vào order-service
-          await axios.patch(
-            `${ORDER_SERVICE_URL}/orders/${payload.orderId}/drone-location`,
-            {
-              latitude: dronePos.latitude,
-              longitude: dronePos.longitude,
-              droneId: drone._id,
-            }
-          );
-
-          // Nếu đã tới nơi thì dừng
-          if (
-            Math.abs(dronePos.latitude - customer.latitude) < 0.0005 &&
-            Math.abs(dronePos.longitude - customer.longitude) < 0.0005
-          ) {
-            clearInterval(interval);
-
-            // Drone đã tới vị trí khách hàng – chờ khách xác nhận giao hàng
-            drone.waitingForCustomerConfirmation = true;
-            // giữ drone.status là in-transit cho đến khi khách xác nhận
-            await drone.save();
-
-            console.log(
-              "🟡 Drone arrived and is waiting for customer confirmation:",
-              payload.orderId
-            );
-          }
-        } catch (err) {
-          console.error("❌ Error while moving drone:", err.message);
-        }
-      }, 1000);
+      // Reuse module helper assignDroneToOrder
+      const assigned = await assignDroneToOrder(drone, order);
+      if (assigned) console.log("🚁 Assigned drone:", drone.code);
     } catch (err) {
       console.error("❌ Error in drone-service event handler:", err.message);
     }
