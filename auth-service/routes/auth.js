@@ -63,4 +63,23 @@ router.post("/admin/users/bulk-info", async (req, res) => {
   }
 });
 
+// 🔥 Admin login
+router.post("/admin/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username, role: "admin" });
+    if (!user) return res.status(404).send({ error: "Admin not found" });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).send({ error: "Invalid password" });
+
+    const token = generateToken(user);
+    res.send({ token });
+  } catch (err) {
+    console.error("Admin login error:", err);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
 module.exports = router;

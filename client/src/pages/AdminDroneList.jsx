@@ -35,7 +35,30 @@ export default function AdminDroneList() {
       setLoading(true);
       // Giả sử gateway map:  /drone/admin/drones  ->  drone-service /admin/drones
       const res = await axiosInstance.get("/drone/admin/drones");
-      setDrones(res.data || []);
+      const dronesData = res.data || [];
+
+      // Với mỗi drone, lấy tổng số đơn đã delivered do drone đó giao
+      try {
+        const counts = await Promise.all(
+          dronesData.map((d) =>
+            axiosInstance
+              .get(`/admin/drone/${d._id}/delivered-count`)
+              .then((r) => r.data.delivered)
+              .catch(() => 0)
+          )
+        );
+
+        const merged = dronesData.map((d, i) => ({
+          ...d,
+          deliveredCount: counts[i] || 0,
+        }));
+
+        setDrones(merged);
+      } catch (e) {
+        // Nếu lỗi khi fetch counts, vẫn set drones mà không có count
+        console.warn("Failed to fetch delivered counts", e.message);
+        setDrones(dronesData);
+      }
     } catch (err) {
       console.error("Fetch drones error:", err);
     } finally {
@@ -259,6 +282,9 @@ export default function AdminDroneList() {
                       Active
                     </th>
                     <th className="px-4 py-2 border-b border-gray-800 text-left">
+                      Delivered
+                    </th>
+                    <th className="px-4 py-2 border-b border-gray-800 text-left">
                       Actions
                     </th>
                   </tr>
@@ -290,6 +316,11 @@ export default function AdminDroneList() {
                         </td>
                         <td className="px-4 py-2 border-b border-gray-800">
                           {d.isActive ? "Yes" : "No"}
+                        </td>
+                        <td className="px-4 py-2 border-b border-gray-800">
+                          {typeof d.deliveredCount === "number"
+                            ? d.deliveredCount
+                            : "-"}
                         </td>
                         <td className="px-4 py-2 border-b border-gray-800 space-x-2">
                           <button

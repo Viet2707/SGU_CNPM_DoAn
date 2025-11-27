@@ -22,7 +22,7 @@ services:
     build: ./drone-service
     container_name: drone-service
     ports:
-      - "5041:5009"
+      - "5090:5009"
     environment:
       - PORT=5009
       - ORDER_SERVICE_URL=http://order-service:5003

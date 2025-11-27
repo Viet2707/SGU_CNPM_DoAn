@@ -30,14 +30,14 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
 
     // Tổng doanh thu delivered
     const totalRevenueAgg = await Order.aggregate([
-      { $match: deliveredFilter },               // ⭐ thêm match
+      { $match: deliveredFilter }, // ⭐ thêm match
       { $group: { _id: null, total: { $sum: "$total" } } },
     ]);
     const totalRevenue = totalRevenueAgg[0]?.total || 0;
 
     // Báo cáo theo nhà hàng — chỉ delivered
     const restaurantAgg = await Order.aggregate([
-      { $match: deliveredFilter },               // ⭐ thêm match
+      { $match: deliveredFilter }, // ⭐ thêm match
       {
         $group: {
           _id: "$restaurantId",
@@ -49,7 +49,7 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
 
     // Báo cáo theo tài xế — chỉ delivered
     const deliveryAgg = await Order.aggregate([
-      { $match: deliveredFilter },               // ⭐ thêm match
+      { $match: deliveredFilter }, // ⭐ thêm match
       {
         $group: {
           _id: "$deliveryPersonId",
@@ -61,7 +61,7 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
 
     // Báo cáo theo khách hàng — chỉ delivered
     const customerAgg = await Order.aggregate([
-      { $match: deliveredFilter },               // ⭐ thêm match
+      { $match: deliveredFilter }, // ⭐ thêm match
       {
         $group: {
           _id: "$customerId",
@@ -155,5 +155,30 @@ router.get("/stats", verifyToken, allowRoles("admin"), async (req, res) => {
     res.status(500).json({ message: "Failed to fetch admin stats" });
   }
 });
+
+// ✅ Get delivered count for a given drone (admin)
+router.get(
+  "/drone/:droneId/delivered-count",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { droneId } = req.params;
+      if (!droneId) return res.status(400).json({ message: "Missing droneId" });
+
+      const filter = {
+        status: "delivered",
+        deliveryMethod: "drone",
+        $or: [{ droneId: droneId }, { "drone.droneId": droneId }],
+      };
+
+      const count = await Order.countDocuments(filter);
+      res.json({ droneId, delivered: count });
+    } catch (err) {
+      console.error("Error fetching drone delivered count:", err.message);
+      res.status(500).json({ message: "Failed to fetch delivered count" });
+    }
+  }
+);
 
 module.exports = router;
