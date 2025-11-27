@@ -108,7 +108,10 @@ export default function DroneTracking() {
               );
 
               // Cập nhật trạng thái trên UI ngay lập tức
-              setTracking((prev) => ({ ...(prev || {}), orderStatus: "delivered" }));
+              setTracking((prev) => ({
+                ...(prev || {}),
+                orderStatus: "delivered",
+              }));
             }
           } catch (err) {
             console.error("Failed to mark order delivered:", err);
