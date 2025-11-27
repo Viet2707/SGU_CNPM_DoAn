@@ -71,7 +71,10 @@ async function assignDroneToOrder(drone, order, options = {}) {
         return false;
       }
 
-      console.error("Failed to notify order-service about assigned drone:", err.message);
+      console.error(
+        "Failed to notify order-service about assigned drone:",
+        err.message
+      );
     }
 
     // Publish event to mark in-transit
@@ -100,11 +103,14 @@ async function assignDroneToOrder(drone, order, options = {}) {
         await drone.save();
 
         // Update order-service with drone location
-        await axios.patch(`${ORDER_SERVICE_URL}/orders/${order._id}/drone-location`, {
-          latitude: dronePos.latitude,
-          longitude: dronePos.longitude,
-          droneId: drone._id,
-        });
+        await axios.patch(
+          `${ORDER_SERVICE_URL}/orders/${order._id}/drone-location`,
+          {
+            latitude: dronePos.latitude,
+            longitude: dronePos.longitude,
+            droneId: drone._id,
+          }
+        );
 
         // if arrived (eps threshold)
         if (
@@ -115,7 +121,10 @@ async function assignDroneToOrder(drone, order, options = {}) {
           // waiting for customer confirmation
           drone.waitingForCustomerConfirmation = true;
           await drone.save();
-          console.log("Drone arrived and waiting for customer confirmation", order._id);
+          console.log(
+            "Drone arrived and waiting for customer confirmation",
+            order._id
+          );
         }
       } catch (err) {
         console.error("Error while moving drone:", err.message);

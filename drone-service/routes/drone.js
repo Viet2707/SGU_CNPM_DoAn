@@ -121,7 +121,6 @@ router.get("/tracking/:orderId", async (req, res) => {
   }
 });
 
-
 // ==========================
 // ✅ Xác nhận đã giao bởi khách
 // ==========================
@@ -158,7 +157,10 @@ router.patch("/drones/:id/confirm-delivered", async (req, res) => {
       if (data && data._id) orderAvailable = data;
 
       if (orderAvailable) {
-        console.log("Found available order to auto-assign:", orderAvailable._id);
+        console.log(
+          "Found available order to auto-assign:",
+          orderAvailable._id
+        );
         // call helper to assign
         await assignDroneToOrder(drone, orderAvailable);
       }
