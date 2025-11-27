@@ -6,7 +6,8 @@ const axios = require("axios");
 const { publishEvent } = require("../rabbitmq"); // 🔔 RabbitMQ
 
 const NOTIFY_SERVICE_URL = process.env.NOTIFY_SERVICE_URL;
-const DRONE_SERVICE_URL = process.env.DRONE_SERVICE_URL || "http://drone-service:5009";
+const DRONE_SERVICE_URL =
+  process.env.DRONE_SERVICE_URL || "http://drone-service:5009";
 
 /* ===========================
    🧍 CUSTOMER ROUTES
@@ -367,7 +368,9 @@ router.patch("/orders/:id/drone-delivered", async (req, res) => {
     try {
       if (order.droneId) {
         // Call drone-service endpoint to mark drone idle/confirmed
-        await axios.patch(`${DRONE_SERVICE_URL}/drones/${order.droneId}/confirm-delivered`);
+        await axios.patch(
+          `${DRONE_SERVICE_URL}/drones/${order.droneId}/confirm-delivered`
+        );
       }
     } catch (err) {
       console.error("Failed to notify drone-service:", err.message);

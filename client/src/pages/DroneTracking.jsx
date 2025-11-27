@@ -101,10 +101,16 @@ export default function DroneTracking() {
     const serverDroneLocation = tracking.drone?.currentLocation;
     const isDroneCloseToCustomer =
       serverDroneLocation &&
-      Math.abs(serverDroneLocation.latitude - tracking.customer.latitude) < 0.0005 &&
-      Math.abs(serverDroneLocation.longitude - tracking.customer.longitude) < 0.0005;
+      Math.abs(serverDroneLocation.latitude - tracking.customer.latitude) <
+        0.0005 &&
+      Math.abs(serverDroneLocation.longitude - tracking.customer.longitude) <
+        0.0005;
 
-    if (hasArrived || tracking.drone?.details?.waitingForCustomerConfirmation || isDroneCloseToCustomer) {
+    if (
+      hasArrived ||
+      tracking.drone?.details?.waitingForCustomerConfirmation ||
+      isDroneCloseToCustomer
+    ) {
       setDronePos(customerPos);
       setHasArrived(true);
       return;
@@ -129,8 +135,8 @@ export default function DroneTracking() {
         setDronePos(customerPos);
         clearInterval(interval);
 
-            // Khi drone tới nơi: dừng animation và hiện nút xác nhận cho khách hàng
-            setHasArrived(true);
+        // Khi drone tới nơi: dừng animation và hiện nút xác nhận cho khách hàng
+        setHasArrived(true);
 
         return;
       }
