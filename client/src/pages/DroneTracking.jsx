@@ -73,6 +73,12 @@ export default function DroneTracking() {
       tracking.customer.longitude,
     ];
 
+    // Nếu đơn đã delivered thì đặt drone đứng yên ở vị trí khách và không animate
+    if (tracking.orderStatus === "delivered") {
+      setDronePos(customerPos);
+      return;
+    }
+
     // Bắt đầu tại nhà hàng
     setDronePos(restaurantPos);
 
@@ -91,6 +97,24 @@ export default function DroneTracking() {
         // Tới nơi → gắn đúng vị trí khách hàng và dừng
         setDronePos(customerPos);
         clearInterval(interval);
+
+        // Khi drone tới nơi: thông báo backend và cập nhật UI thành "delivered"
+        (async () => {
+          try {
+            if (tracking.orderStatus !== "delivered") {
+              // Note: order-service routes are mounted under /order on the API gateway
+              await axios.patch(
+                `http://localhost:8000/order/orders/${orderId}/drone-delivered`
+              );
+
+              // Cập nhật trạng thái trên UI ngay lập tức
+              setTracking((prev) => ({ ...(prev || {}), orderStatus: "delivered" }));
+            }
+          } catch (err) {
+            console.error("Failed to mark order delivered:", err);
+          }
+        })();
+
         return;
       }
 
@@ -101,7 +125,7 @@ export default function DroneTracking() {
     }, speedMs);
 
     return () => clearInterval(interval);
-  }, [tracking]);
+  }, [tracking, orderId]);
 
   if (!tracking || !dronePos)
     return <div style={{ color: "white" }}>Loading...</div>;
