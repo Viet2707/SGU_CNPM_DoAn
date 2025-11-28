@@ -147,26 +147,26 @@ const OrderHistory = () => {
                 {order.deliveryMethod === "drone" &&
                   order.status &&
                   order.status.toLowerCase() === "in-transit" && (
-                  <button
-                    className="track-drone-btn"
-                    onClick={() =>
-                      navigate(`/orders/${order._id}/drone-tracking`)
-                    }
-                    style={{
-                      marginTop: "12px",
-                      padding: "10px 14px",
-                      borderRadius: "8px",
-                      backgroundColor: "#2563eb",
-                      color: "white",
-                      cursor: "pointer",
-                      width: "100%",
-                      border: "none",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    🚁 Track Drone Delivery
-                  </button>
-                )}
+                    <button
+                      className="track-drone-btn"
+                      onClick={() =>
+                        navigate(`/orders/${order._id}/drone-tracking`)
+                      }
+                      style={{
+                        marginTop: "12px",
+                        padding: "10px 14px",
+                        borderRadius: "8px",
+                        backgroundColor: "#2563eb",
+                        color: "white",
+                        cursor: "pointer",
+                        width: "100%",
+                        border: "none",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      🚁 Track Drone Delivery
+                    </button>
+                  )}
               </div>
             </div>
           ))}
