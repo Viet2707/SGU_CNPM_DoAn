@@ -144,7 +144,9 @@ const OrderHistory = () => {
                     ${order.total.toFixed(2)}
                   </span>
                 </div>
-                {order.deliveryMethod === "drone" && (
+                {order.deliveryMethod === "drone" &&
+                  order.status &&
+                  order.status.toLowerCase() === "in-transit" && (
                   <button
                     className="track-drone-btn"
                     onClick={() =>
