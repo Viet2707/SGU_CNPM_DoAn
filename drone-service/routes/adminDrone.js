@@ -59,10 +59,9 @@ router.put("/:id", verifyToken, allowRoles("admin"), async (req, res) => {
   }
 });
 
-// Xóa drone (nên soft delete)
-router.delete("/:id", verifyToken, allowRoles("admin"), async (req, res) => {
+// Disable drone (soft delete)
+router.patch("/:id/disable", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
-    // Option 1: soft delete
     const drone = await Drone.findByIdAndUpdate(
       req.params.id,
       { isActive: false },
@@ -71,6 +70,57 @@ router.delete("/:id", verifyToken, allowRoles("admin"), async (req, res) => {
     if (!drone) return res.status(404).json({ message: "Drone not found" });
     res.json({ message: "Drone disabled", drone });
   } catch (err) {
+    res.status(500).json({ message: "Failed to disable drone" });
+  }
+});
+
+// Xóa drone vĩnh viễn (kiểm tra orders trước)
+router.delete("/:id", verifyToken, allowRoles("admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if drone exists
+    const drone = await Drone.findById(id);
+    if (!drone) {
+      return res.status(404).json({ message: "Drone not found" });
+    }
+
+    // Check if drone has orders by calling order-service
+    const axios = require("axios");
+    const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+    
+    try {
+      console.log(`[DELETE DRONE] Checking orders for drone ${id} at ${ORDER_SERVICE_URL}/orders/drone/${id}`);
+      const orderCheck = await axios.get(`${ORDER_SERVICE_URL}/orders/drone/${id}`, {
+        timeout: 3000
+      });
+      
+      console.log(`[DELETE DRONE] Order check response:`, orderCheck.data);
+      
+      if (orderCheck.data && orderCheck.data.length > 0) {
+        console.log(`[DELETE DRONE] Drone ${id} has ${orderCheck.data.length} orders, cannot delete`);
+        return res.status(400).json({ 
+          message: "Cannot delete drone with existing orders",
+          orderCount: orderCheck.data.length 
+        });
+      }
+      
+      console.log(`[DELETE DRONE] Drone ${id} has no orders, proceeding with deletion`);
+    } catch (orderErr) {
+      // If order service is down, we should NOT allow deletion for safety
+      console.error("[DELETE DRONE] Error checking orders:", orderErr.message);
+      return res.status(503).json({ 
+        message: "Cannot verify order status. Please try again later.",
+        error: orderErr.message 
+      });
+    }
+
+    // Delete the drone
+    await Drone.findByIdAndDelete(id);
+    console.log(`[DELETE DRONE] Successfully deleted drone ${id}`);
+    res.json({ message: "Drone deleted successfully" });
+  } catch (err) {
+    console.error("Failed to delete drone:", err.message);
     res.status(500).json({ message: "Failed to delete drone" });
   }
 });

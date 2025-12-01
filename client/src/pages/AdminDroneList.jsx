@@ -122,13 +122,30 @@ export default function AdminDroneList() {
     });
   };
 
-  const handleDelete = async (id) => {
+  const handleDisable = async (id) => {
     if (!window.confirm("Disable this drone?")) return;
     try {
+      await axiosInstance.patch(`/drone/admin/drones/${id}/disable`);
+      await fetchDrones();
+    } catch (err) {
+      console.error("Disable drone error:", err);
+      alert("Failed to disable drone");
+    }
+  };
+
+  const handleDelete = async (id, droneName) => {
+    if (!window.confirm(`Bạn có chắc muốn XÓA VĨNH VIỄN drone "${droneName}"?\n\nHành động này không thể hoàn tác!`)) {
+      return;
+    }
+
+    try {
       await axiosInstance.delete(`/drone/admin/drones/${id}`);
+      alert("Xóa drone thành công!");
       await fetchDrones();
     } catch (err) {
       console.error("Delete drone error:", err);
+      const message = err.response?.data?.message || "Không thể xóa drone";
+      alert(message);
     }
   };
 
@@ -330,10 +347,16 @@ export default function AdminDroneList() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(d._id)}
-                            className="px-3 py-1 rounded bg-red-500 text-white text-xs hover:bg-red-400"
+                            onClick={() => handleDisable(d._id)}
+                            className="px-3 py-1 rounded bg-yellow-600 text-white text-xs hover:bg-yellow-500"
                           >
                             Disable
+                          </button>
+                          <button
+                            onClick={() => handleDelete(d._id, d.name)}
+                            className="px-3 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500"
+                          >
+                            Delete
                           </button>
                         </td>
                       </tr>

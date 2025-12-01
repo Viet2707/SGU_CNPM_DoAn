@@ -134,6 +134,30 @@ router.get(
   }
 );
 
+// 📦 Get orders by customer ID (for admin to check before deleting)
+router.get("/orders/customer/:customerId", async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const orders = await Order.find({ customerId });
+    res.json(orders);
+  } catch (err) {
+    console.error("Failed to fetch customer orders:", err.message);
+    res.status(500).json({ message: "Failed to fetch customer orders" });
+  }
+});
+
+// 📦 Get orders by drone ID (for admin to check before deleting drone)
+router.get("/orders/drone/:droneId", async (req, res) => {
+  try {
+    const { droneId } = req.params;
+    const orders = await Order.find({ droneId });
+    res.json(orders);
+  } catch (err) {
+    console.error("Failed to fetch drone orders:", err.message);
+    res.status(500).json({ message: "Failed to fetch drone orders" });
+  }
+});
+
 /* ===========================
    🍴 RESTAURANT ROUTES
 =========================== */
