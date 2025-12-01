@@ -82,4 +82,71 @@ router.post("/admin/login", async (req, res) => {
   }
 });
 
+// 👥 Get all customers (admin only)
+router.get("/admin/customers", verifyToken, allowRoles("admin"), async (req, res) => {
+  try {
+    const customers = await User.find({ role: "customer" }, "_id username email verified createdAt");
+    res.json(customers);
+  } catch (err) {
+    console.error("Failed to fetch customers:", err.message);
+    res.status(500).json({ message: "Failed to fetch customers" });
+  }
+});
+
+// 🗑️ Delete customer (admin only) - check if customer has orders first
+router.delete("/admin/customers/:id", verifyToken, allowRoles("admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if customer exists
+    const customer = await User.findById(id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+    
+    if (customer.role !== "customer") {
+      return res.status(403).json({ message: "Can only delete customer accounts" });
+    }
+
+    // Check if customer has orders by calling order-service
+    const axios = require("axios");
+    const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+    
+    try {
+      console.log(`[DELETE CUSTOMER] Checking orders for customer ${id} at ${ORDER_SERVICE_URL}/orders/customer/${id}`);
+      const orderCheck = await axios.get(`${ORDER_SERVICE_URL}/orders/customer/${id}`, {
+        timeout: 3000
+      });
+      
+      console.log(`[DELETE CUSTOMER] Order check response:`, orderCheck.data);
+      
+      if (orderCheck.data && orderCheck.data.length > 0) {
+        console.log(`[DELETE CUSTOMER] Customer ${id} has ${orderCheck.data.length} orders, cannot delete`);
+        return res.status(400).json({ 
+          message: "Cannot delete customer with existing orders",
+          orderCount: orderCheck.data.length 
+        });
+      }
+      
+      console.log(`[DELETE CUSTOMER] Customer ${id} has no orders, proceeding with deletion`);
+    } catch (orderErr) {
+      // If order service is down, we should NOT allow deletion for safety
+      console.error("[DELETE CUSTOMER] Error checking orders:", orderErr.message);
+      console.error("[DELETE CUSTOMER] Full error:", orderErr.response?.data || orderErr);
+      return res.status(503).json({ 
+        message: "Cannot verify order status. Please try again later.",
+        error: orderErr.message 
+      });
+    }
+
+    // Delete the customer
+    await User.findByIdAndDelete(id);
+    console.log(`[DELETE CUSTOMER] Successfully deleted customer ${id}`);
+    res.json({ message: "Customer deleted successfully" });
+  } catch (err) {
+    console.error("Failed to delete customer:", err.message);
+    res.status(500).json({ message: "Failed to delete customer" });
+  }
+});
+
 module.exports = router;

@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import '../styles/theme.css';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("stats"); // "stats" or "accounts"
+  const [customers, setCustomers] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -37,9 +40,96 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="p-6 text-white text-lg">Loading dashboard...</div>;
-  if (!stats) return <div className="p-6 text-white text-lg">No stats available.</div>;
+  useEffect(() => {
+    if (activeTab === "accounts") {
+      fetchCustomers();
+    }
+  }, [activeTab]);
 
+  const fetchCustomers = async () => {
+    setLoadingCustomers(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:8000/auth/admin/customers", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCustomers(res.data);
+    } catch (err) {
+      console.error("Failed to fetch customers:", err);
+      alert("Không thể tải danh sách khách hàng");
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (customerId, username) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa tài khoản "${username}"?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:8000/auth/admin/customers/${customerId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("Xóa tài khoản thành công!");
+      fetchCustomers(); // Refresh list
+    } catch (err) {
+      console.error("Failed to delete customer:", err);
+      const message = err.response?.data?.message || "Không thể xóa tài khoản";
+      alert(message);
+    }
+  };
+
+  if (loading) return <div className="p-6 text-white text-lg">Loading dashboard...</div>;
+
+  return (
+    <div className="app-root py-8">
+      <div className="container mx-auto">
+        <h1 className="orders-title">Admin Dashboard</h1>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6 border-b border-gray-700">
+          <button
+            onClick={() => setActiveTab("stats")}
+            className={`px-4 py-2 font-semibold transition-colors ${
+              activeTab === "stats"
+                ? "text-green-400 border-b-2 border-green-400"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            📊 Thống kê
+          </button>
+          <button
+            onClick={() => setActiveTab("accounts")}
+            className={`px-4 py-2 font-semibold transition-colors ${
+              activeTab === "accounts"
+                ? "text-green-400 border-b-2 border-green-400"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            👥 Quản lý tài khoản
+          </button>
+        </div>
+
+        {/* Stats Tab */}
+        {activeTab === "stats" && stats && <StatsView stats={stats} />}
+
+        {/* Accounts Tab */}
+        {activeTab === "accounts" && (
+          <AccountsView
+            customers={customers}
+            loading={loadingCustomers}
+            onDelete={handleDeleteCustomer}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* --- Stats View Component --- */
+function StatsView({ stats }) {
   const {
     totalOrders,
     totalRevenue,
@@ -49,76 +139,122 @@ export default function AdminDashboard() {
   } = stats;
 
   return (
-    <div className="app-root py-8">
+    <>
       <div className="container mx-auto">
-        <h1 className="orders-title">Admin Dashboard</h1>
 
-        {/* Summary cards */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-          <div className="card">
-            <div className="text-sm text-gray-400">Total Orders</div>
-            <div className="text-2xl font-bold mt-2">{totalOrders}</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-gray-400">Total Revenue</div>
-            <div className="text-2xl font-bold mt-2">{formatCurrency(totalRevenue)}</div>
-          </div>
-        </section>
+      {/* Summary cards */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        <div className="card">
+          <div className="text-sm text-gray-400">Total Orders</div>
+          <div className="text-2xl font-bold mt-2">{totalOrders}</div>
+        </div>
+        <div className="card">
+          <div className="text-sm text-gray-400">Total Revenue</div>
+          <div className="text-2xl font-bold mt-2">{formatCurrency(totalRevenue)}</div>
+        </div>
+      </section>
 
-        {/* Restaurant Breakdown */}
-        <BreakdownTable
-          title="📦 By Restaurant"
-          data={restaurantBreakdown}
-          columns={[
-            { key: "restaurantName", label: "Restaurant" },
-            { key: "orders", label: "Orders" },
-            { key: "revenue", label: "Revenue" },
-            { key: "shares.restaurant", label: "Restaurant Share" },
-            { key: "shares.delivery", label: "Delivery Share" },
-            { key: "shares.platform", label: "Platform Share" },
-          ]}
-        />
+      {/* Restaurant Breakdown */}
+      <BreakdownTable
+        title="📦 By Restaurant"
+        data={restaurantBreakdown}
+        columns={[
+          { key: "restaurantName", label: "Restaurant" },
+          { key: "orders", label: "Orders" },
+          { key: "revenue", label: "Revenue" },
+          { key: "shares.restaurant", label: "Restaurant Share" },
+          { key: "shares.delivery", label: "Delivery Share" },
+          { key: "shares.platform", label: "Platform Share" },
+        ]}
+      />
 
-        {/* Delivery Breakdown */}
-        <BreakdownTable
-          title="🚚 By Delivery"
-          data={deliveryBreakdown}
-          columns={[
-            { key: "deliveryName", label: "DeliveryId" },
-            { key: "orders", label: "Orders" },
-            { key: "revenue", label: "Revenue" },
-            { key: "shares.restaurant", label: "Restaurant Share" },
-            { key: "shares.delivery", label: "Delivery Share" },
-            { key: "shares.platform", label: "Platform Share" },
-          ]}
-        />
+      {/* Delivery Breakdown */}
+      <BreakdownTable
+        title="🚚 By Delivery"
+        data={deliveryBreakdown}
+        columns={[
+          { key: "deliveryName", label: "DeliveryId" },
+          { key: "orders", label: "Orders" },
+          { key: "revenue", label: "Revenue" },
+          { key: "shares.restaurant", label: "Restaurant Share" },
+          { key: "shares.delivery", label: "Delivery Share" },
+          { key: "shares.platform", label: "Platform Share" },
+        ]}
+      />
 
-        {/* Customer Breakdown */}
-        <BreakdownTable
-          title="🧍‍♂️ By Customer"
-          data={customerBreakdown}
-          columns={[
-            { key: "customerName", label: "CustomerId" },
-            { key: "email", label: "Email" },
-            { key: "orders", label: "Orders" },
-            { key: "totalSpent", label: "Total Spent" },
-          ]}
-        />
+      {/* Customer Breakdown */}
+      <BreakdownTable
+        title="🧍‍♂️ By Customer"
+        data={customerBreakdown}
+        columns={[
+          { key: "customerName", label: "CustomerId" },
+          { key: "email", label: "Email" },
+          { key: "orders", label: "Orders" },
+          { key: "totalSpent", label: "Total Spent" },
+        ]}
+      />
       </div>
-    </div>
+    </>
+  );
+}
+
+/* --- Accounts View Component --- */
+function AccountsView({ customers, loading, onDelete }) {
+  if (loading) {
+    return <div className="text-white text-lg">Đang tải danh sách khách hàng...</div>;
+  }
+
+  return (
+    <section>
+      <h2 className="text-2xl font-semibold mb-3 orders-subtitle">👥 Danh sách khách hàng</h2>
+      <div className="overflow-x-auto card">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-900 text-gray-300">
+            <tr>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Username</th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Email</th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Verified</th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customers && customers.length > 0 ? (
+              customers.map((customer, i) => (
+                <tr key={customer._id} className={i % 2 === 0 ? "bg-gray-900" : "bg-gray-800"}>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {customer.username}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {customer.email || "-"}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {customer.verified ? "✅" : "❌"}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800">
+                    <button
+                      onClick={() => onDelete(customer._id, customer.username)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors"
+                    >
+                      🗑️ Xóa
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="text-center py-4 text-gray-500">
+                  Không có khách hàng nào
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
 /* --- Components --- */
-
-function StatCard({ title, value }) {
-  return (
-    <div className="card">
-      <div className="text-sm text-gray-400">{title}</div>
-      <div className="text-2xl font-bold mt-2">{value}</div>
-    </div>
-  );
-}
 
 function BreakdownTable({ title, data = [], columns = [] }) {
   return (
