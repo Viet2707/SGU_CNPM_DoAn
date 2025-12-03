@@ -149,4 +149,25 @@ router.delete("/admin/customers/:id", verifyToken, allowRoles("admin"), async (r
   }
 });
 
+// 🗑️ Delete any user by ID (admin only) - used by other services
+router.delete("/admin/users/:id", verifyToken, allowRoles("admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Delete the user
+    await User.findByIdAndDelete(id);
+    console.log(`[DELETE USER] Successfully deleted user ${id} (${user.role})`);
+    res.json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Failed to delete user:", err.message);
+    res.status(500).json({ message: "Failed to delete user" });
+  }
+});
+
 module.exports = router;

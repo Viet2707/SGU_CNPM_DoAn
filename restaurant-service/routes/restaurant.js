@@ -268,4 +268,81 @@ router.post(
   }
 );
 
+// =============================
+// DELETE RESTAURANT (ADMIN ONLY)
+// =============================
+router.delete(
+  "/admin/restaurants/:restaurantId",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+
+      console.log("🗑️ Admin attempting to delete restaurant:", restaurantId);
+
+      // Check if restaurant exists
+      const restaurant = await Restaurant.findById(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Nhà hàng không tồn tại" });
+      }
+
+      // Check if restaurant has any orders
+      const ORDER_SERVICE_URL =
+        process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+      
+      try {
+        const orderCheckResponse = await axios.get(
+          `${ORDER_SERVICE_URL}/admin/restaurant/${restaurantId}/has-orders`,
+          {
+            headers: { Authorization: req.headers.authorization },
+          }
+        );
+
+        if (orderCheckResponse.data.hasOrders) {
+          return res.status(400).json({
+            message: "Không thể xóa nhà hàng này vì đã có đơn hàng",
+          });
+        }
+      } catch (err) {
+        console.error("Error checking orders:", err.message);
+        return res.status(500).json({
+          message: "Không thể kiểm tra đơn hàng của nhà hàng",
+        });
+      }
+
+      // Delete all menu items of this restaurant
+      await MenuItem.deleteMany({ restaurantId });
+      console.log("✅ Deleted menu items for restaurant:", restaurantId);
+
+      // Delete the restaurant
+      await Restaurant.findByIdAndDelete(restaurantId);
+      console.log("✅ Deleted restaurant:", restaurantId);
+
+      // Delete the owner account from auth-service
+      const AUTH_SERVICE_URL =
+        process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+      
+      try {
+        await axios.delete(
+          `${AUTH_SERVICE_URL}/admin/users/${restaurant.ownerId}`,
+          {
+            headers: { Authorization: req.headers.authorization },
+          }
+        );
+        console.log("✅ Deleted owner account:", restaurant.ownerId);
+      } catch (err) {
+        console.warn("Warning: Could not delete owner account:", err.message);
+      }
+
+      return res.json({
+        message: "Xóa nhà hàng thành công",
+      });
+    } catch (err) {
+      console.error("❌ Delete restaurant error:", err.message);
+      res.status(500).json({ message: "Lỗi server khi xóa nhà hàng" });
+    }
+  }
+);
+
 module.exports = router;

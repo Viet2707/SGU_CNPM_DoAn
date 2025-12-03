@@ -8,6 +8,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("stats"); // "stats" or "accounts"
   const [customers, setCustomers] = useState([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [restaurants, setRestaurants] = useState([]);
+  const [loadingRestaurants, setLoadingRestaurants] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -43,6 +45,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === "accounts") {
       fetchCustomers();
+      fetchRestaurants();
     }
   }, [activeTab]);
 
@@ -62,6 +65,22 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchRestaurants = async () => {
+    setLoadingRestaurants(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:8000/restaurant/api/restaurants", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRestaurants(res.data);
+    } catch (err) {
+      console.error("Failed to fetch restaurants:", err);
+      alert("Không thể tải danh sách nhà hàng");
+    } finally {
+      setLoadingRestaurants(false);
+    }
+  };
+
   const handleDeleteCustomer = async (customerId, username) => {
     if (!window.confirm(`Bạn có chắc muốn xóa tài khoản "${username}"?`)) {
       return;
@@ -77,6 +96,25 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Failed to delete customer:", err);
       const message = err.response?.data?.message || "Không thể xóa tài khoản";
+      alert(message);
+    }
+  };
+
+  const handleDeleteRestaurant = async (restaurantId, restaurantName) => {
+    if (!window.confirm(`Bạn có chắc muốn XÓA VĨNH VIỄN nhà hàng "${restaurantName}"?\n\nHành động này sẽ xóa:\n- Nhà hàng\n- Tất cả menu items\n- Tài khoản owner\n\nHành động này không thể hoàn tác!`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:8000/restaurant/admin/restaurants/${restaurantId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("Xóa nhà hàng thành công!");
+      fetchRestaurants(); // Refresh list
+    } catch (err) {
+      console.error("Failed to delete restaurant:", err);
+      const message = err.response?.data?.message || "Không thể xóa nhà hàng";
       alert(message);
     }
   };
@@ -117,11 +155,18 @@ export default function AdminDashboard() {
 
         {/* Accounts Tab */}
         {activeTab === "accounts" && (
-          <AccountsView
-            customers={customers}
-            loading={loadingCustomers}
-            onDelete={handleDeleteCustomer}
-          />
+          <>
+            <AccountsView
+              customers={customers}
+              loading={loadingCustomers}
+              onDelete={handleDeleteCustomer}
+            />
+            <RestaurantsView
+              restaurants={restaurants}
+              loading={loadingRestaurants}
+              onDelete={handleDeleteRestaurant}
+            />
+          </>
         )}
       </div>
     </div>
@@ -244,6 +289,70 @@ function AccountsView({ customers, loading, onDelete }) {
               <tr>
                 <td colSpan={4} className="text-center py-4 text-gray-500">
                   Không có khách hàng nào
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+/* --- Restaurants View Component --- */
+function RestaurantsView({ restaurants, loading, onDelete }) {
+  if (loading) {
+    return <div className="text-white text-lg mt-6">Đang tải danh sách nhà hàng...</div>;
+  }
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-2xl font-semibold mb-3 orders-subtitle">🏪 Danh sách nhà hàng</h2>
+      <div className="overflow-x-auto card">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-900 text-gray-300">
+            <tr>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Tên nhà hàng
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Owner ID
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Trạng thái
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Hành động
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {restaurants && restaurants.length > 0 ? (
+              restaurants.map((restaurant, i) => (
+                <tr key={restaurant._id} className={i % 2 === 0 ? "bg-gray-900" : "bg-gray-800"}>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {restaurant.name}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {restaurant.ownerId}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {restaurant.isOpen ? "🟢 Đang mở" : "🔴 Đã đóng"}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800">
+                    <button
+                      onClick={() => onDelete(restaurant._id, restaurant.name)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors"
+                    >
+                      🗑️ Xóa
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="text-center py-4 text-gray-500">
+                  Chưa có nhà hàng nào
                 </td>
               </tr>
             )}

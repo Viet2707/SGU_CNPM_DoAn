@@ -181,4 +181,29 @@ router.get(
   }
 );
 
+// ✅ Check if restaurant has any orders (admin)
+router.get(
+  "/restaurant/:restaurantId/has-orders",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+      if (!restaurantId) {
+        return res.status(400).json({ message: "Missing restaurantId" });
+      }
+
+      const count = await Order.countDocuments({ restaurantId });
+      res.json({ 
+        restaurantId, 
+        hasOrders: count > 0,
+        orderCount: count 
+      });
+    } catch (err) {
+      console.error("Error checking restaurant orders:", err.message);
+      res.status(500).json({ message: "Failed to check restaurant orders" });
+    }
+  }
+);
+
 module.exports = router;
