@@ -206,4 +206,64 @@ router.get(
   }
 );
 
+// ✅ Get order counts for multiple customers (admin)
+router.post(
+  "/customers/order-counts",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { customerIds } = req.body;
+      if (!customerIds || !Array.isArray(customerIds)) {
+        return res.status(400).json({ message: "Missing or invalid customerIds" });
+      }
+
+      const counts = await Order.aggregate([
+        { $match: { customerId: { $in: customerIds } } },
+        { $group: { _id: "$customerId", count: { $sum: 1 } } }
+      ]);
+
+      const countMap = {};
+      counts.forEach(item => {
+        countMap[item._id] = item.count;
+      });
+
+      res.json(countMap);
+    } catch (err) {
+      console.error("Error getting customer order counts:", err.message);
+      res.status(500).json({ message: "Failed to get order counts" });
+    }
+  }
+);
+
+// ✅ Get order counts for multiple restaurants (admin)
+router.post(
+  "/restaurants/order-counts",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { restaurantIds } = req.body;
+      if (!restaurantIds || !Array.isArray(restaurantIds)) {
+        return res.status(400).json({ message: "Missing or invalid restaurantIds" });
+      }
+
+      const counts = await Order.aggregate([
+        { $match: { restaurantId: { $in: restaurantIds } } },
+        { $group: { _id: "$restaurantId", count: { $sum: 1 } } }
+      ]);
+
+      const countMap = {};
+      counts.forEach(item => {
+        countMap[item._id] = item.count;
+      });
+
+      res.json(countMap);
+    } catch (err) {
+      console.error("Error getting restaurant order counts:", err.message);
+      res.status(500).json({ message: "Failed to get order counts" });
+    }
+  }
+);
+
 module.exports = router;

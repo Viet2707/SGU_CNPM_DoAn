@@ -56,7 +56,30 @@ export default function AdminDashboard() {
       const res = await axios.get("http://localhost:8000/auth/admin/customers", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setCustomers(res.data);
+      
+      // Fetch order counts for customers
+      const customerIds = res.data.map(c => c._id);
+      let orderCounts = {};
+      if (customerIds.length > 0) {
+        try {
+          const countsRes = await axios.post(
+            "http://localhost:8000/order/admin/customers/order-counts",
+            { customerIds },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          orderCounts = countsRes.data;
+        } catch (err) {
+          console.warn("Failed to fetch customer order counts:", err);
+        }
+      }
+      
+      // Add order count to each customer
+      const customersWithCounts = res.data.map(customer => ({
+        ...customer,
+        orderCount: orderCounts[customer._id] || 0
+      }));
+      
+      setCustomers(customersWithCounts);
     } catch (err) {
       console.error("Failed to fetch customers:", err);
       alert("Không thể tải danh sách khách hàng");
@@ -72,7 +95,30 @@ export default function AdminDashboard() {
       const res = await axios.get("http://localhost:8000/restaurant/api/restaurants", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setRestaurants(res.data);
+      
+      // Fetch order counts for restaurants
+      const restaurantIds = res.data.map(r => r._id);
+      let orderCounts = {};
+      if (restaurantIds.length > 0) {
+        try {
+          const countsRes = await axios.post(
+            "http://localhost:8000/order/admin/restaurants/order-counts",
+            { restaurantIds },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          orderCounts = countsRes.data;
+        } catch (err) {
+          console.warn("Failed to fetch restaurant order counts:", err);
+        }
+      }
+      
+      // Add order count to each restaurant
+      const restaurantsWithCounts = res.data.map(restaurant => ({
+        ...restaurant,
+        orderCount: orderCounts[restaurant._id] || 0
+      }));
+      
+      setRestaurants(restaurantsWithCounts);
     } catch (err) {
       console.error("Failed to fetch restaurants:", err);
       alert("Không thể tải danh sách nhà hàng");
@@ -303,8 +349,7 @@ function AccountsView({ customers, loading, onDelete, onLock }) {
           <thead className="bg-gray-900 text-gray-300">
             <tr>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Username</th>
-              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Email</th>
-              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Verified</th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Tổng đơn hàng</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Trạng thái</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Hành động</th>
             </tr>
@@ -317,10 +362,7 @@ function AccountsView({ customers, loading, onDelete, onLock }) {
                     {customer.username}
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
-                    {customer.email || "-"}
-                  </td>
-                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
-                    {customer.verified ? "✅" : "❌"}
+                    {customer.orderCount || 0}
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
                     {customer.isLocked ? "🔒 Đã khóa" : "🔓 Hoạt động"}
@@ -347,7 +389,7 @@ function AccountsView({ customers, loading, onDelete, onLock }) {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="text-center py-4 text-gray-500">
+                <td colSpan={4} className="text-center py-4 text-gray-500">
                   Không có khách hàng nào
                 </td>
               </tr>
@@ -379,7 +421,7 @@ function RestaurantsView({ restaurants, loading, onDelete, onLock }) {
                 Owner ID
               </th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
-                Trạng thái cửa hàng
+                Tổng đơn hàng
               </th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
                 Trạng thái tài khoản
@@ -400,7 +442,7 @@ function RestaurantsView({ restaurants, loading, onDelete, onLock }) {
                     {restaurant.ownerId}
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
-                    {restaurant.isOpen ? "🟢 Đang mở" : "🔴 Đã đóng"}
+                    {restaurant.orderCount || 0}
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
                     {restaurant.isLocked ? "🔒 Đã khóa" : "🔓 Hoạt động"}
