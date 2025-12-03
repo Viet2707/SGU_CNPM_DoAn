@@ -100,6 +100,28 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleLockCustomer = async (customerId, username, currentLockStatus) => {
+    const action = currentLockStatus ? "mở khóa" : "khóa";
+    if (!window.confirm(`Bạn có chắc muốn ${action} tài khoản "${username}"?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(
+        `http://localhost:8000/auth/admin/customers/${customerId}/lock`,
+        { isLocked: !currentLockStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công!`);
+      fetchCustomers(); // Refresh list
+    } catch (err) {
+      console.error("Failed to lock/unlock customer:", err);
+      const message = err.response?.data?.message || `Không thể ${action} tài khoản`;
+      alert(message);
+    }
+  };
+
   const handleDeleteRestaurant = async (restaurantId, restaurantName) => {
     if (!window.confirm(`Bạn có chắc muốn XÓA VĨNH VIỄN nhà hàng "${restaurantName}"?\n\nHành động này sẽ xóa:\n- Nhà hàng\n- Tất cả menu items\n- Tài khoản owner\n\nHành động này không thể hoàn tác!`)) {
       return;
@@ -115,6 +137,28 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Failed to delete restaurant:", err);
       const message = err.response?.data?.message || "Không thể xóa nhà hàng";
+      alert(message);
+    }
+  };
+
+  const handleLockRestaurant = async (restaurantId, restaurantName, currentLockStatus) => {
+    const action = currentLockStatus ? "mở khóa" : "khóa";
+    if (!window.confirm(`Bạn có chắc muốn ${action} nhà hàng "${restaurantName}"?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(
+        `http://localhost:8000/restaurant/admin/restaurants/${restaurantId}/lock`,
+        { isLocked: !currentLockStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(`${action.charAt(0).toUpperCase() + action.slice(1)} nhà hàng thành công!`);
+      fetchRestaurants(); // Refresh list
+    } catch (err) {
+      console.error("Failed to lock/unlock restaurant:", err);
+      const message = err.response?.data?.message || `Không thể ${action} nhà hàng`;
       alert(message);
     }
   };
@@ -160,11 +204,13 @@ export default function AdminDashboard() {
               customers={customers}
               loading={loadingCustomers}
               onDelete={handleDeleteCustomer}
+              onLock={handleLockCustomer}
             />
             <RestaurantsView
               restaurants={restaurants}
               loading={loadingRestaurants}
               onDelete={handleDeleteRestaurant}
+              onLock={handleLockRestaurant}
             />
           </>
         )}
@@ -244,7 +290,7 @@ function StatsView({ stats }) {
 }
 
 /* --- Accounts View Component --- */
-function AccountsView({ customers, loading, onDelete }) {
+function AccountsView({ customers, loading, onDelete, onLock }) {
   if (loading) {
     return <div className="text-white text-lg">Đang tải danh sách khách hàng...</div>;
   }
@@ -259,6 +305,7 @@ function AccountsView({ customers, loading, onDelete }) {
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Username</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Email</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Verified</th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Trạng thái</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Hành động</th>
             </tr>
           </thead>
@@ -275,7 +322,20 @@ function AccountsView({ customers, loading, onDelete }) {
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
                     {customer.verified ? "✅" : "❌"}
                   </td>
-                  <td className="px-4 py-2 border-b border-gray-800">
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {customer.isLocked ? "🔒 Đã khóa" : "🔓 Hoạt động"}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 space-x-2">
+                    <button
+                      onClick={() => onLock(customer._id, customer.username, customer.isLocked)}
+                      className={`${
+                        customer.isLocked
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-yellow-600 hover:bg-yellow-700"
+                      } text-white px-3 py-1 rounded transition-colors`}
+                    >
+                      {customer.isLocked ? "🔓 Mở khóa" : "🔒 Khóa"}
+                    </button>
                     <button
                       onClick={() => onDelete(customer._id, customer.username)}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors"
@@ -287,7 +347,7 @@ function AccountsView({ customers, loading, onDelete }) {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="text-center py-4 text-gray-500">
+                <td colSpan={5} className="text-center py-4 text-gray-500">
                   Không có khách hàng nào
                 </td>
               </tr>
@@ -300,7 +360,7 @@ function AccountsView({ customers, loading, onDelete }) {
 }
 
 /* --- Restaurants View Component --- */
-function RestaurantsView({ restaurants, loading, onDelete }) {
+function RestaurantsView({ restaurants, loading, onDelete, onLock }) {
   if (loading) {
     return <div className="text-white text-lg mt-6">Đang tải danh sách nhà hàng...</div>;
   }
@@ -319,7 +379,10 @@ function RestaurantsView({ restaurants, loading, onDelete }) {
                 Owner ID
               </th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
-                Trạng thái
+                Trạng thái cửa hàng
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Trạng thái tài khoản
               </th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
                 Hành động
@@ -339,7 +402,20 @@ function RestaurantsView({ restaurants, loading, onDelete }) {
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
                     {restaurant.isOpen ? "🟢 Đang mở" : "🔴 Đã đóng"}
                   </td>
-                  <td className="px-4 py-2 border-b border-gray-800">
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {restaurant.isLocked ? "🔒 Đã khóa" : "🔓 Hoạt động"}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 space-x-2">
+                    <button
+                      onClick={() => onLock(restaurant._id, restaurant.name, restaurant.isLocked)}
+                      className={`${
+                        restaurant.isLocked
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-yellow-600 hover:bg-yellow-700"
+                      } text-white px-3 py-1 rounded transition-colors`}
+                    >
+                      {restaurant.isLocked ? "🔓 Mở khóa" : "🔒 Khóa"}
+                    </button>
                     <button
                       onClick={() => onDelete(restaurant._id, restaurant.name)}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors"
@@ -351,7 +427,7 @@ function RestaurantsView({ restaurants, loading, onDelete }) {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="text-center py-4 text-gray-500">
+                <td colSpan={5} className="text-center py-4 text-gray-500">
                   Chưa có nhà hàng nào
                 </td>
               </tr>

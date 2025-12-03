@@ -136,7 +136,9 @@ const CreateOrder = () => {
           }
         );
         console.log("Fetched restaurants:", response.data);
-        setRestaurants(response.data);
+        // Filter out locked restaurants
+        const activeRestaurants = response.data.filter(restaurant => !restaurant.isLocked);
+        setRestaurants(activeRestaurants);
       } catch (err) {
         setError("Failed to fetch restaurants");
         console.error("Restaurant fetch error:", err);

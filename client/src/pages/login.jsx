@@ -36,7 +36,22 @@ export default function Login() {
         window.location.href = "/";
       }
     } catch (err) {
-      setError(err.response?.data?.error || "Login failed");
+      const errorMessage = err.response?.data?.error || "Login failed";
+      
+      // Translate error messages to Vietnamese
+      let vietnameseError = errorMessage;
+      if (errorMessage.includes("Account is locked")) {
+        vietnameseError = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin để được hỗ trợ.";
+      } else if (errorMessage.includes("User not found")) {
+        vietnameseError = "Tài khoản không tồn tại";
+      } else if (errorMessage.includes("Invalid password")) {
+        vietnameseError = "Mật khẩu không đúng";
+      } else {
+        vietnameseError = "Đăng nhập thất bại. Vui lòng thử lại.";
+      }
+      
+      setError(vietnameseError);
+      toast.error(vietnameseError);
     } finally {
       setLoading(false);
     }
@@ -49,6 +64,13 @@ export default function Login() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-black">Login</h1>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="w-full mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <p className="font-semibold">⚠️ {error}</p>
+          </div>
+        )}
 
         {/* Form Section */}
         <form onSubmit={handleSubmit} className="w-full space-y-4">

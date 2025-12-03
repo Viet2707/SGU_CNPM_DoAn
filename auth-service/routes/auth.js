@@ -27,6 +27,11 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ username });
     if (!user) return res.status(404).send({ error: "User not found" });
 
+    // Check if account is locked
+    if (user.isLocked) {
+      return res.status(403).send({ error: "Account is locked. Please contact administrator." });
+    }
+
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).send({ error: "Invalid password" });
 
@@ -54,7 +59,7 @@ router.post("/admin/users/bulk-info", async (req, res) => {
   try {
     const { ids } = req.body;
 
-    const users = await User.find({ _id: { $in: ids } }, "_id username role");
+    const users = await User.find({ _id: { $in: ids } }, "_id username role isLocked");
 
     res.json(users);
   } catch (err) {
@@ -85,7 +90,7 @@ router.post("/admin/login", async (req, res) => {
 // 👥 Get all customers (admin only)
 router.get("/admin/customers", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
-    const customers = await User.find({ role: "customer" }, "_id username email verified createdAt");
+    const customers = await User.find({ role: "customer" }, "_id username email verified isLocked createdAt");
     res.json(customers);
   } catch (err) {
     console.error("Failed to fetch customers:", err.message);
@@ -167,6 +172,64 @@ router.delete("/admin/users/:id", verifyToken, allowRoles("admin"), async (req, 
   } catch (err) {
     console.error("Failed to delete user:", err.message);
     res.status(500).json({ message: "Failed to delete user" });
+  }
+});
+
+// 🔒 Lock/Unlock customer account (admin only)
+router.patch("/admin/customers/:id/lock", verifyToken, allowRoles("admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isLocked } = req.body;
+    
+    // Check if customer exists
+    const customer = await User.findById(id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+    
+    if (customer.role !== "customer") {
+      return res.status(403).json({ message: "Can only lock/unlock customer accounts" });
+    }
+
+    // Update lock status
+    customer.isLocked = isLocked;
+    await customer.save();
+    
+    console.log(`[LOCK CUSTOMER] ${isLocked ? 'Locked' : 'Unlocked'} customer ${id}`);
+    res.json({ 
+      message: `Customer ${isLocked ? 'locked' : 'unlocked'} successfully`,
+      isLocked: customer.isLocked
+    });
+  } catch (err) {
+    console.error("Failed to lock/unlock customer:", err.message);
+    res.status(500).json({ message: "Failed to lock/unlock customer" });
+  }
+});
+
+// 🔒 Lock/Unlock any user account (admin only) - used by other services
+router.patch("/admin/users/:id/lock", verifyToken, allowRoles("admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isLocked } = req.body;
+    
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update lock status
+    user.isLocked = isLocked;
+    await user.save();
+    
+    console.log(`[LOCK USER] ${isLocked ? 'Locked' : 'Unlocked'} user ${id} (${user.role})`);
+    res.json({ 
+      message: `User ${isLocked ? 'locked' : 'unlocked'} successfully`,
+      isLocked: user.isLocked
+    });
+  } catch (err) {
+    console.error("Failed to lock/unlock user:", err.message);
+    res.status(500).json({ message: "Failed to lock/unlock user" });
   }
 });
 

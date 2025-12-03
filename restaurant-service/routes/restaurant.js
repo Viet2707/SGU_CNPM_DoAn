@@ -23,7 +23,34 @@ cloudinary.config({
 router.get("/api/restaurants", async (req, res) => {
   try {
     const restaurants = await Restaurant.find();
-    res.json(restaurants);
+    
+    // Fetch owner lock status from auth-service
+    const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+    const ownerIds = restaurants.map(r => r.ownerId).filter(Boolean);
+    
+    let ownerLockStatus = {};
+    if (ownerIds.length > 0) {
+      try {
+        const response = await axios.post(
+          `${AUTH_SERVICE_URL}/admin/users/bulk-info`,
+          { ids: ownerIds },
+          { timeout: 3000 }
+        );
+        response.data.forEach(user => {
+          ownerLockStatus[user._id] = user.isLocked || false;
+        });
+      } catch (err) {
+        console.warn("Warning: Could not fetch owner lock status:", err.message);
+      }
+    }
+    
+    // Add isLocked status to each restaurant
+    const restaurantsWithLockStatus = restaurants.map(r => ({
+      ...r.toObject(),
+      isLocked: ownerLockStatus[r.ownerId] || false,
+    }));
+    
+    res.json(restaurantsWithLockStatus);
   } catch (err) {
     console.error("Error fetching restaurants:", err.message);
     res.status(500).json({ message: "Internal server error" });
@@ -192,21 +219,54 @@ router.get("/menu/all", verifyToken, async (req, res) => {
 
     const restaurants = await Restaurant.find({ _id: { $in: restaurantIds } });
 
+    // Fetch owner lock status from auth-service
+    const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+    const ownerIds = restaurants.map(r => r.ownerId).filter(Boolean);
+    
+    let lockedOwnerIds = new Set();
+    if (ownerIds.length > 0) {
+      try {
+        const response = await axios.post(
+          `${AUTH_SERVICE_URL}/admin/users/bulk-info`,
+          { ids: ownerIds },
+          { timeout: 3000 }
+        );
+        response.data.forEach(user => {
+          if (user.isLocked) {
+            lockedOwnerIds.add(user._id);
+          }
+        });
+      } catch (err) {
+        console.warn("Warning: Could not fetch owner lock status:", err.message);
+      }
+    }
+
+    // Create map of restaurant info including lock status
     const restaurantMap = restaurants.reduce((map, restaurant) => {
-      map[restaurant._id.toString()] = restaurant.name;
+      const isLocked = lockedOwnerIds.has(restaurant.ownerId);
+      map[restaurant._id.toString()] = {
+        name: restaurant.name,
+        isLocked: isLocked,
+      };
       return map;
     }, {});
 
-    const itemsWithRestaurant = menuItems.map((item) => ({
-      _id: item._id,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      imageUrl: item.imageUrl,
-      restaurantId: item.restaurantId,
-      restaurantName:
-        restaurantMap[item.restaurantId.toString()] || "Unknown Restaurant",
-    }));
+    // Filter out menu items from locked restaurants
+    const itemsWithRestaurant = menuItems
+      .filter((item) => {
+        const restaurantInfo = restaurantMap[item.restaurantId.toString()];
+        return restaurantInfo && !restaurantInfo.isLocked;
+      })
+      .map((item) => ({
+        _id: item._id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        restaurantId: item.restaurantId,
+        restaurantName:
+          restaurantMap[item.restaurantId.toString()]?.name || "Unknown Restaurant",
+      }));
 
     res.json(itemsWithRestaurant);
   } catch (err) {
@@ -341,6 +401,57 @@ router.delete(
     } catch (err) {
       console.error("❌ Delete restaurant error:", err.message);
       res.status(500).json({ message: "Lỗi server khi xóa nhà hàng" });
+    }
+  }
+);
+
+// =============================
+// LOCK/UNLOCK RESTAURANT OWNER (ADMIN ONLY)
+// =============================
+router.patch(
+  "/admin/restaurants/:restaurantId/lock",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+      const { isLocked } = req.body;
+
+      console.log(`🔒 Admin attempting to ${isLocked ? 'lock' : 'unlock'} restaurant:`, restaurantId);
+
+      // Check if restaurant exists
+      const restaurant = await Restaurant.findById(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Nhà hàng không tồn tại" });
+      }
+
+      // Lock/unlock the owner account via auth-service
+      const AUTH_SERVICE_URL =
+        process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+      
+      try {
+        await axios.patch(
+          `${AUTH_SERVICE_URL}/admin/users/${restaurant.ownerId}/lock`,
+          { isLocked },
+          {
+            headers: { Authorization: req.headers.authorization },
+          }
+        );
+        console.log(`✅ ${isLocked ? 'Locked' : 'Unlocked'} owner account:`, restaurant.ownerId);
+      } catch (err) {
+        console.error("Error locking/unlocking owner account:", err.message);
+        return res.status(500).json({
+          message: "Không thể khóa/mở khóa tài khoản owner",
+        });
+      }
+
+      return res.json({
+        message: `${isLocked ? 'Khóa' : 'Mở khóa'} nhà hàng thành công`,
+        isLocked,
+      });
+    } catch (err) {
+      console.error("❌ Lock/unlock restaurant error:", err.message);
+      res.status(500).json({ message: "Lỗi server khi khóa/mở khóa nhà hàng" });
     }
   }
 );
