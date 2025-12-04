@@ -53,6 +53,23 @@ router.put("/:id", verifyToken, allowRoles("admin"), async (req, res) => {
       new: true,
     });
     if (!drone) return res.status(404).json({ message: "Drone not found" });
+    
+    // 🔥 Nếu admin bật lại drone (isActive = true)
+    // → Tự động assign tất cả order pending cho các drone idle
+    if (update.isActive === true) {
+      try {
+        const { autoAssignPendingOrders } = require("../utils/autoAssignPendingOrders");
+        // Chạy async không chờ để không block response
+        setImmediate(() => {
+          autoAssignPendingOrders().catch(err => {
+            console.error("Background auto-assign failed:", err.message);
+          });
+        });
+      } catch (e) {
+        console.warn("Auto-assign trigger failed:", e.message);
+      }
+    }
+    
     res.json(drone);
   } catch (err) {
     res.status(500).json({ message: "Failed to update drone" });
@@ -71,6 +88,21 @@ router.patch("/:id/disable", verifyToken, allowRoles("admin"), async (req, res) 
     res.json({ message: "Drone disabled", drone });
   } catch (err) {
     res.status(500).json({ message: "Failed to disable drone" });
+  }
+});
+
+// 🔄 Manual trigger auto-assign pending orders
+router.post("/auto-assign", verifyToken, allowRoles("admin"), async (req, res) => {
+  try {
+    const { autoAssignPendingOrders } = require("../utils/autoAssignPendingOrders");
+    const result = await autoAssignPendingOrders();
+    res.json({
+      message: "Auto-assign completed",
+      ...result
+    });
+  } catch (err) {
+    console.error("Manual auto-assign failed:", err.message);
+    res.status(500).json({ message: "Failed to auto-assign orders" });
   }
 });
 

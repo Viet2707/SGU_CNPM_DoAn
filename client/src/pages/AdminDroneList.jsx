@@ -275,7 +275,24 @@ export default function AdminDroneList() {
 
         {/* Bảng danh sách drone */}
         <section className="card">
-          <h2 className="orders-subtitle mb-3">Drone List</h2>
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="orders-subtitle">Drone List</h2>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await axiosInstance.post("/drone/admin/drones/auto-assign");
+                  alert(`Auto-assign completed!\nAssigned: ${res.data.assigned}\nPending: ${res.data.pending}`);
+                  await fetchDrones();
+                } catch (err) {
+                  console.error("Auto-assign error:", err);
+                  alert("Failed to auto-assign orders");
+                }
+              }}
+              className="px-4 py-2 rounded bg-green-600 text-white text-sm font-semibold hover:bg-green-500"
+            >
+              🔄 Auto-Assign Pending Orders
+            </button>
+          </div>
           {loading ? (
             <div className="text-gray-300">Loading...</div>
           ) : (

@@ -143,29 +143,17 @@ router.patch("/drones/:id/confirm-delivered", async (req, res) => {
 
     res.json({ message: "Drone confirmed delivered and is idle", drone });
 
-    // After drone becomes idle, try to auto-assign the next available order for drones
+    // After drone becomes idle, try to auto-assign pending orders
     try {
-      const ORDER_SERVICE_URL =
-        process.env.ORDER_SERVICE_URL || "http://order-service:5003";
-      const availRes = await axios.get(
-        `${ORDER_SERVICE_URL}/orders/available/drone`
-      );
-      const data = availRes.data;
-      // Support both array & single-object response
-      let orderAvailable = null;
-      if (Array.isArray(data) && data.length) orderAvailable = data[0];
-      if (data && data._id) orderAvailable = data;
-
-      if (orderAvailable) {
-        console.log(
-          "Found available order to auto-assign:",
-          orderAvailable._id
-        );
-        // call helper to assign
-        await assignDroneToOrder(drone, orderAvailable);
-      }
+      const { autoAssignPendingOrders } = require("../utils/autoAssignPendingOrders");
+      // Chạy async không chờ để không block response
+      setImmediate(() => {
+        autoAssignPendingOrders().catch(err => {
+          console.error("Background auto-assign after delivery failed:", err.message);
+        });
+      });
     } catch (e) {
-      console.warn("Auto-assign after drone idle failed:", e.message);
+      console.warn("Auto-assign trigger after delivery failed:", e.message);
     }
   } catch (err) {
     console.error("Failed to confirm drone delivered:", err.message);
@@ -174,29 +162,3 @@ router.patch("/drones/:id/confirm-delivered", async (req, res) => {
 });
 
 module.exports = router;
-
-// ==========================
-// ✅ Xác nhận đã giao bởi khách
-// ==========================
-router.patch("/drones/:id/confirm-delivered", async (req, res) => {
-  try {
-    const Drone = require("../models/Drone");
-    const drone = await Drone.findById(req.params.id);
-    if (!drone) return res.status(404).json({ message: "Drone not found" });
-
-    drone.status = "idle";
-    drone.assignedOrderId = null;
-    drone.waitingForCustomerConfirmation = false;
-
-    // If the drone has base location, set currentLocation back to base
-    if (drone.baseLocation) {
-      drone.currentLocation = drone.baseLocation;
-    }
-
-    await drone.save();
-    res.json({ message: "Drone confirmed delivered and is idle", drone });
-  } catch (err) {
-    console.error("Failed to confirm drone delivered:", err.message);
-    res.status(500).json({ message: "Error confirming delivered" });
-  }
-});
