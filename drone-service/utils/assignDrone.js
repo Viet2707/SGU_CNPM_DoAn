@@ -93,16 +93,27 @@ async function assignDroneToOrder(drone, order, options = {}) {
       longitude: drone.currentLocation.longitude,
     };
 
+    let isMoving = true;
     const interval = setInterval(async () => {
-      try {
-        dronePos = moveTowards(dronePos, customer);
-        drone.currentLocation = {
-          latitude: dronePos.latitude,
-          longitude: dronePos.longitude,
-        };
-        await drone.save();
+      if (!isMoving) {
+        clearInterval(interval);
+        return;
+      }
 
-        // Update order-service with drone location
+      try {
+        // Reload drone to check if it was confirmed by customer
+        const currentDrone = await Drone.findById(drone._id);
+        if (!currentDrone || currentDrone.status === "idle" || !currentDrone.assignedOrderId) {
+          // Drone was confirmed or reassigned, stop moving
+          isMoving = false;
+          clearInterval(interval);
+          console.log("Drone movement stopped - confirmed or reassigned");
+          return;
+        }
+
+        dronePos = moveTowards(dronePos, customer);
+        
+        // Update order-service with drone location first
         await axios.patch(
           `${ORDER_SERVICE_URL}/orders/${order._id}/drone-location`,
           {
@@ -117,17 +128,36 @@ async function assignDroneToOrder(drone, order, options = {}) {
           Math.abs(dronePos.latitude - customer.latitude) < 0.0005 &&
           Math.abs(dronePos.longitude - customer.longitude) < 0.0005
         ) {
+          isMoving = false;
           clearInterval(interval);
-          // waiting for customer confirmation
-          drone.waitingForCustomerConfirmation = true;
-          await drone.save();
+          
+          // Update drone in a single save operation
+          currentDrone.currentLocation = {
+            latitude: dronePos.latitude,
+            longitude: dronePos.longitude,
+          };
+          currentDrone.waitingForCustomerConfirmation = true;
+          await currentDrone.save();
+          
           console.log(
             "Drone arrived and waiting for customer confirmation",
             order._id
           );
+        } else {
+          // Only update location if still moving
+          currentDrone.currentLocation = {
+            latitude: dronePos.latitude,
+            longitude: dronePos.longitude,
+          };
+          await currentDrone.save();
         }
       } catch (err) {
         console.error("Error while moving drone:", err.message);
+        if (err.message.includes("parallel") || err.message.includes("save()")) {
+          // If parallel save error, stop the interval
+          isMoving = false;
+          clearInterval(interval);
+        }
       }
     }, 1000);
 
