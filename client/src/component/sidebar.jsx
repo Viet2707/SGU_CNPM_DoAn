@@ -203,6 +203,26 @@ const Sidebar = ({ user }) => {
                     </span>
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    to="/restaurant/settings"
+                    className={`flex items-center p-3 rounded-md transition-colors duration-200
+                               ${
+                                 isActive("/restaurant/settings")
+                                   ? "bg-yellow-500 text-black"
+                                   : "hover:bg-gray-800"
+                               }`}
+                  >
+                    <User size={20} />
+                    <span
+                      className={`ml-3 ${
+                        !isOpen && window.innerWidth < 1024 ? "hidden" : "block"
+                      }`}
+                    >
+                      Settings
+                    </span>
+                  </Link>
+                </li>
               </>
             )}
 

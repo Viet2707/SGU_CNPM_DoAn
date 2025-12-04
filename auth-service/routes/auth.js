@@ -29,7 +29,10 @@ router.post("/login", async (req, res) => {
 
     // Check if account is locked
     if (user.isLocked) {
-      return res.status(403).send({ error: "Account is locked. Please contact administrator." });
+      return res.status(403).send({ 
+        error: "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.",
+        lockReason: user.lockReason || "Không có lý do cụ thể"
+      });
     }
 
     const valid = await bcrypt.compare(password, user.password);
@@ -59,7 +62,7 @@ router.post("/admin/users/bulk-info", async (req, res) => {
   try {
     const { ids } = req.body;
 
-    const users = await User.find({ _id: { $in: ids } }, "_id username role isLocked");
+    const users = await User.find({ _id: { $in: ids } }, "_id username role isLocked lockReason");
 
     res.json(users);
   } catch (err) {
@@ -90,7 +93,7 @@ router.post("/admin/login", async (req, res) => {
 // 👥 Get all customers (admin only)
 router.get("/admin/customers", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
-    const customers = await User.find({ role: "customer" }, "_id username email verified isLocked createdAt");
+    const customers = await User.find({ role: "customer" }, "_id username email verified isLocked lockReason lockHistory createdAt");
     res.json(customers);
   } catch (err) {
     console.error("Failed to fetch customers:", err.message);
@@ -179,7 +182,7 @@ router.delete("/admin/users/:id", verifyToken, allowRoles("admin"), async (req, 
 router.patch("/admin/customers/:id/lock", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
     const { id } = req.params;
-    const { isLocked } = req.body;
+    const { isLocked, reason } = req.body;
     
     // Check if customer exists
     const customer = await User.findById(id);
@@ -221,12 +224,26 @@ router.patch("/admin/customers/:id/lock", verifyToken, allowRoles("admin"), asyn
 
     // Update lock status
     customer.isLocked = isLocked;
+    customer.lockReason = isLocked ? (reason || "Không có lý do cụ thể") : null;
+    
+    // Add to lock history
+    if (!customer.lockHistory) {
+      customer.lockHistory = [];
+    }
+    customer.lockHistory.push({
+      action: isLocked ? 'locked' : 'unlocked',
+      reason: reason || (isLocked ? "Không có lý do cụ thể" : "Mở khóa bởi admin"),
+      adminId: req.user.id,
+      timestamp: new Date()
+    });
+    
     await customer.save();
     
-    console.log(`[LOCK CUSTOMER] ${isLocked ? 'Locked' : 'Unlocked'} customer ${id}`);
+    console.log(`[LOCK CUSTOMER] ${isLocked ? 'Locked' : 'Unlocked'} customer ${id} - Reason: ${reason || 'N/A'}`);
     res.json({ 
       message: `Customer ${isLocked ? 'locked' : 'unlocked'} successfully`,
-      isLocked: customer.isLocked
+      isLocked: customer.isLocked,
+      lockReason: customer.lockReason
     });
   } catch (err) {
     console.error("Failed to lock/unlock customer:", err.message);
@@ -238,7 +255,7 @@ router.patch("/admin/customers/:id/lock", verifyToken, allowRoles("admin"), asyn
 router.patch("/admin/users/:id/lock", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
     const { id } = req.params;
-    const { isLocked } = req.body;
+    const { isLocked, reason } = req.body;
     
     // Check if user exists
     const user = await User.findById(id);
@@ -248,12 +265,26 @@ router.patch("/admin/users/:id/lock", verifyToken, allowRoles("admin"), async (r
 
     // Update lock status
     user.isLocked = isLocked;
+    user.lockReason = isLocked ? (reason || "Không có lý do cụ thể") : null;
+    
+    // Add to lock history
+    if (!user.lockHistory) {
+      user.lockHistory = [];
+    }
+    user.lockHistory.push({
+      action: isLocked ? 'locked' : 'unlocked',
+      reason: reason || (isLocked ? "Không có lý do cụ thể" : "Mở khóa bởi admin"),
+      adminId: req.user.id,
+      timestamp: new Date()
+    });
+    
     await user.save();
     
-    console.log(`[LOCK USER] ${isLocked ? 'Locked' : 'Unlocked'} user ${id} (${user.role})`);
+    console.log(`[LOCK USER] ${isLocked ? 'Locked' : 'Unlocked'} user ${id} (${user.role}) - Reason: ${reason || 'N/A'}`);
     res.json({ 
       message: `User ${isLocked ? 'locked' : 'unlocked'} successfully`,
-      isLocked: user.isLocked
+      isLocked: user.isLocked,
+      lockReason: user.lockReason
     });
   } catch (err) {
     console.error("Failed to lock/unlock user:", err.message);

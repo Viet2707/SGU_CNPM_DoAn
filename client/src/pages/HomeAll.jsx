@@ -264,7 +264,10 @@ const HomeAll = () => {
                         <div className="flex items-center justify-between">
                           <span className="price">${item.price.toFixed(2)}</span>
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              handleAddToCart(item); 
+                            }}
                             className="btn-add"
                           >
                             Add
@@ -316,7 +319,15 @@ const HomeAll = () => {
                               <p className="text-gray-400 text-sm mb-3">{item.restaurantName}</p>
                               <div className="flex items-center justify-between">
                                 <span className="price">${item.price.toFixed(2)}</span>
-                                <button onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }} className="btn-add">Add</button>
+                                <button 
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    handleAddToCart(item); 
+                                  }} 
+                                  className="btn-add"
+                                >
+                                  Add
+                                </button>
                               </div>
                             </div>
                           </div>

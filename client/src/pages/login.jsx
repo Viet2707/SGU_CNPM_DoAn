@@ -37,11 +37,12 @@ export default function Login() {
       }
     } catch (err) {
       const errorMessage = err.response?.data?.error || "Login failed";
+      const lockReason = err.response?.data?.lockReason;
       
       // Translate error messages to Vietnamese
       let vietnameseError = errorMessage;
-      if (errorMessage.includes("Account is locked")) {
-        vietnameseError = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin để được hỗ trợ.";
+      if (errorMessage.includes("Tài khoản đã bị khóa") || errorMessage.includes("Account is locked")) {
+        vietnameseError = `🔒 Tài khoản của bạn đã bị khóa.\n\nLý do: ${lockReason || "Không có lý do cụ thể"}\n\nVui lòng liên hệ admin để được hỗ trợ.`;
       } else if (errorMessage.includes("User not found")) {
         vietnameseError = "Tài khoản không tồn tại";
       } else if (errorMessage.includes("Invalid password")) {

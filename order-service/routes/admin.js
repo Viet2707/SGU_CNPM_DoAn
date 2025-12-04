@@ -206,11 +206,11 @@ router.get(
   }
 );
 
-// ✅ Check if restaurant has pending orders (admin)
+// ✅ Check if restaurant has pending orders (admin + restaurant owner)
 router.get(
   "/restaurant/:restaurantId/has-pending-orders",
   verifyToken,
-  allowRoles("admin"),
+  allowRoles("admin", "restaurant"),
   async (req, res) => {
     try {
       const { restaurantId } = req.params;

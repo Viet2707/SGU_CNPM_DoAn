@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [restaurants, setRestaurants] = useState([]);
   const [loadingRestaurants, setLoadingRestaurants] = useState(false);
+  const [closureRequests, setClosureRequests] = useState([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -119,6 +120,23 @@ export default function AdminDashboard() {
       }));
       
       setRestaurants(restaurantsWithCounts);
+      
+      // Extract closure requests
+      const allClosureRequests = [];
+      restaurantsWithCounts.forEach(restaurant => {
+        if (restaurant.closureRequests && restaurant.closureRequests.length > 0) {
+          restaurant.closureRequests.forEach(request => {
+            if (request.status === 'pending') {
+              allClosureRequests.push({
+                ...request,
+                restaurantId: restaurant._id,
+                restaurantName: restaurant.name
+              });
+            }
+          });
+        }
+      });
+      setClosureRequests(allClosureRequests);
     } catch (err) {
       console.error("Failed to fetch restaurants:", err);
       alert("Không thể tải danh sách nhà hàng");
@@ -148,15 +166,28 @@ export default function AdminDashboard() {
 
   const handleLockCustomer = async (customerId, username, currentLockStatus) => {
     const action = currentLockStatus ? "mở khóa" : "khóa";
-    if (!window.confirm(`Bạn có chắc muốn ${action} tài khoản "${username}"?`)) {
-      return;
+    
+    let reason = "";
+    if (!currentLockStatus) {
+      // Đang khóa - yêu cầu nhập lý do
+      reason = window.prompt(`Nhập lý do ${action} tài khoản "${username}":`);
+      if (reason === null) return; // User cancelled
+      if (!reason.trim()) {
+        alert("Vui lòng nhập lý do khóa tài khoản!");
+        return;
+      }
+    } else {
+      // Đang mở khóa - chỉ cần confirm
+      if (!window.confirm(`Bạn có chắc muốn ${action} tài khoản "${username}"?`)) {
+        return;
+      }
     }
 
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
         `http://localhost:8000/auth/admin/customers/${customerId}/lock`,
-        { isLocked: !currentLockStatus },
+        { isLocked: !currentLockStatus, reason: reason.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công!`);
@@ -189,15 +220,28 @@ export default function AdminDashboard() {
 
   const handleLockRestaurant = async (restaurantId, restaurantName, currentLockStatus) => {
     const action = currentLockStatus ? "mở khóa" : "khóa";
-    if (!window.confirm(`Bạn có chắc muốn ${action} nhà hàng "${restaurantName}"?`)) {
-      return;
+    
+    let reason = "";
+    if (!currentLockStatus) {
+      // Đang khóa - yêu cầu nhập lý do
+      reason = window.prompt(`Nhập lý do ${action} nhà hàng "${restaurantName}":`);
+      if (reason === null) return; // User cancelled
+      if (!reason.trim()) {
+        alert("Vui lòng nhập lý do khóa nhà hàng!");
+        return;
+      }
+    } else {
+      // Đang mở khóa - chỉ cần confirm
+      if (!window.confirm(`Bạn có chắc muốn ${action} nhà hàng "${restaurantName}"?`)) {
+        return;
+      }
     }
 
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
         `http://localhost:8000/restaurant/admin/restaurants/${restaurantId}/lock`,
-        { isLocked: !currentLockStatus },
+        { isLocked: !currentLockStatus, reason: reason.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert(`${action.charAt(0).toUpperCase() + action.slice(1)} nhà hàng thành công!`);
@@ -246,6 +290,14 @@ export default function AdminDashboard() {
         {/* Accounts Tab */}
         {activeTab === "accounts" && (
           <>
+            {closureRequests.length > 0 && (
+              <ClosureRequestsView
+                requests={closureRequests}
+                onRefresh={() => {
+                  fetchRestaurants();
+                }}
+              />
+            )}
             <AccountsView
               customers={customers}
               loading={loadingCustomers}
@@ -335,6 +387,102 @@ function StatsView({ stats }) {
   );
 }
 
+/* --- Closure Requests View Component --- */
+function ClosureRequestsView({ requests, onRefresh }) {
+  const handleApprove = async (restaurantId, requestId) => {
+    if (!window.confirm("Bạn có chắc muốn CHẤP THUẬN yêu cầu đóng tài khoản này?\n\nNhà hàng sẽ bị XÓA VĨNH VIỄN!")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      // Delete restaurant (which will also delete owner account)
+      await axios.delete(`http://localhost:8000/restaurant/admin/restaurants/${restaurantId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("Đã chấp thuận và xóa nhà hàng thành công!");
+      onRefresh();
+    } catch (err) {
+      console.error("Failed to approve closure request:", err);
+      const message = err.response?.data?.message || "Không thể xử lý yêu cầu";
+      alert(message);
+    }
+  };
+
+  const handleReject = async (restaurantId, requestId) => {
+    const reason = window.prompt("Nhập lý do từ chối:");
+    if (reason === null) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      // TODO: Implement reject endpoint
+      alert("Tính năng từ chối đang được phát triển");
+      // For now, just refresh
+      onRefresh();
+    } catch (err) {
+      console.error("Failed to reject closure request:", err);
+      alert("Không thể từ chối yêu cầu");
+    }
+  };
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-2xl font-semibold mb-3 orders-subtitle">
+        ⚠️ Yêu cầu đóng tài khoản ({requests.length})
+      </h2>
+      <div className="overflow-x-auto card">
+        <table className="min-w-full text-sm">
+          <thead className="bg-orange-900 text-gray-300">
+            <tr>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Nhà hàng
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Lý do
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Thời gian yêu cầu
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Hành động
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map((request, i) => (
+              <tr key={i} className={i % 2 === 0 ? "bg-gray-900" : "bg-gray-800"}>
+                <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                  {request.restaurantName}
+                </td>
+                <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                  {request.reason}
+                </td>
+                <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                  {new Date(request.requestedAt).toLocaleString('vi-VN')}
+                </td>
+                <td className="px-4 py-2 border-b border-gray-800 space-x-2">
+                  <button
+                    onClick={() => handleApprove(request.restaurantId, request._id)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors"
+                  >
+                    ✅ Chấp thuận
+                  </button>
+                  <button
+                    onClick={() => handleReject(request.restaurantId, request._id)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors"
+                  >
+                    ❌ Từ chối
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 /* --- Accounts View Component --- */
 function AccountsView({ customers, loading, onDelete, onLock }) {
   if (loading) {
@@ -351,6 +499,7 @@ function AccountsView({ customers, loading, onDelete, onLock }) {
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Username</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Tổng đơn hàng</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Trạng thái</th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Lý do khóa</th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">Hành động</th>
             </tr>
           </thead>
@@ -366,6 +515,17 @@ function AccountsView({ customers, loading, onDelete, onLock }) {
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
                     {customer.isLocked ? "🔒 Đã khóa" : "🔓 Hoạt động"}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {customer.isLocked && customer.lockReason ? (
+                      <span className="text-yellow-400" title={customer.lockReason}>
+                        {customer.lockReason.length > 30 
+                          ? customer.lockReason.substring(0, 30) + "..." 
+                          : customer.lockReason}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 space-x-2">
                     <button
@@ -389,7 +549,7 @@ function AccountsView({ customers, loading, onDelete, onLock }) {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="text-center py-4 text-gray-500">
+                <td colSpan={5} className="text-center py-4 text-gray-500">
                   Không có khách hàng nào
                 </td>
               </tr>
@@ -427,6 +587,9 @@ function RestaurantsView({ restaurants, loading, onDelete, onLock }) {
                 Trạng thái tài khoản
               </th>
               <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
+                Lý do khóa
+              </th>
+              <th className="px-4 py-2 font-semibold border-b border-gray-800 text-left">
                 Hành động
               </th>
             </tr>
@@ -446,6 +609,17 @@ function RestaurantsView({ restaurants, loading, onDelete, onLock }) {
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
                     {restaurant.isLocked ? "🔒 Đã khóa" : "🔓 Hoạt động"}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-800 text-gray-200">
+                    {restaurant.isLocked && restaurant.lockReason ? (
+                      <span className="text-yellow-400" title={restaurant.lockReason}>
+                        {restaurant.lockReason.length > 30 
+                          ? restaurant.lockReason.substring(0, 30) + "..." 
+                          : restaurant.lockReason}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-2 border-b border-gray-800 space-x-2">
                     <button
@@ -469,7 +643,7 @@ function RestaurantsView({ restaurants, loading, onDelete, onLock }) {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="text-center py-4 text-gray-500">
+                <td colSpan={6} className="text-center py-4 text-gray-500">
                   Chưa có nhà hàng nào
                 </td>
               </tr>

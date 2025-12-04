@@ -28,7 +28,7 @@ router.get("/api/restaurants", async (req, res) => {
     const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
     const ownerIds = restaurants.map(r => r.ownerId).filter(Boolean);
     
-    let ownerLockStatus = {};
+    let ownerLockInfo = {};
     if (ownerIds.length > 0) {
       try {
         const response = await axios.post(
@@ -37,17 +37,23 @@ router.get("/api/restaurants", async (req, res) => {
           { timeout: 3000 }
         );
         response.data.forEach(user => {
-          ownerLockStatus[user._id] = user.isLocked || false;
+          ownerLockInfo[user._id] = {
+            isLocked: user.isLocked || false,
+            lockReason: user.lockReason || null
+          };
         });
       } catch (err) {
         console.warn("Warning: Could not fetch owner lock status:", err.message);
       }
     }
     
-    // Add isLocked status to each restaurant
+    // Add isLocked status and lockReason to each restaurant
     const restaurantsWithLockStatus = restaurants.map(r => ({
       ...r.toObject(),
-      isLocked: ownerLockStatus[r.ownerId] || false,
+      isLocked: ownerLockInfo[r.ownerId]?.isLocked || false,
+      lockReason: ownerLockInfo[r.ownerId]?.lockReason || null,
+      isTemporarilyClosed: r.isTemporarilyClosed || false,
+      closureReason: r.closureReason || null,
     }));
     
     res.json(restaurantsWithLockStatus);
@@ -241,21 +247,24 @@ router.get("/menu/all", verifyToken, async (req, res) => {
       }
     }
 
-    // Create map of restaurant info including lock status
+    // Create map of restaurant info including lock status and closure status
     const restaurantMap = restaurants.reduce((map, restaurant) => {
       const isLocked = lockedOwnerIds.has(restaurant.ownerId);
       map[restaurant._id.toString()] = {
         name: restaurant.name,
         isLocked: isLocked,
+        isTemporarilyClosed: restaurant.isTemporarilyClosed || false,
+        closureReason: restaurant.closureReason || null,
       };
       return map;
     }, {});
 
-    // Filter out menu items from locked restaurants
+    // Filter out menu items from locked OR temporarily closed restaurants
     const itemsWithRestaurant = menuItems
       .filter((item) => {
         const restaurantInfo = restaurantMap[item.restaurantId.toString()];
-        return restaurantInfo && !restaurantInfo.isLocked;
+        // Hide items if restaurant is locked OR temporarily closed
+        return restaurantInfo && !restaurantInfo.isLocked && !restaurantInfo.isTemporarilyClosed;
       })
       .map((item) => ({
         _id: item._id,
@@ -459,7 +468,7 @@ router.patch(
       try {
         await axios.patch(
           `${AUTH_SERVICE_URL}/admin/users/${restaurant.ownerId}/lock`,
-          { isLocked },
+          { isLocked, reason: req.body.reason },
           {
             headers: { Authorization: req.headers.authorization },
           }
@@ -479,6 +488,188 @@ router.patch(
     } catch (err) {
       console.error("❌ Lock/unlock restaurant error:", err.message);
       res.status(500).json({ message: "Lỗi server khi khóa/mở khóa nhà hàng" });
+    }
+  }
+);
+
+// =============================
+// TOGGLE TEMPORARY CLOSURE (RESTAURANT OWNER)
+// =============================
+router.patch(
+  "/toggle-closure",
+  verifyToken,
+  allowRoles("restaurant"),
+  async (req, res) => {
+    try {
+      const ownerId = req.user.id;
+      const { isTemporarilyClosed, reason } = req.body;
+
+      console.log(`🏪 Restaurant owner ${ownerId} toggling closure to:`, isTemporarilyClosed);
+
+      const restaurant = await Restaurant.findOne({ ownerId });
+      if (!restaurant) {
+        return res.status(404).json({ message: "Nhà hàng không tồn tại" });
+      }
+
+      // Nếu đang đóng cửa (isTemporarilyClosed = true), kiểm tra đơn hàng pending
+      if (isTemporarilyClosed) {
+        const ORDER_SERVICE_URL =
+          process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+        
+        try {
+          const pendingCheckResponse = await axios.get(
+            `${ORDER_SERVICE_URL}/admin/restaurant/${restaurant._id}/has-pending-orders`,
+            {
+              headers: { Authorization: req.headers.authorization },
+            }
+          );
+
+          if (pendingCheckResponse.data.hasPendingOrders) {
+            return res.status(400).json({
+              message: `Không thể đóng cửa vì còn ${pendingCheckResponse.data.pendingOrderCount} đơn hàng chưa giao xong`,
+              pendingOrderCount: pendingCheckResponse.data.pendingOrderCount,
+            });
+          }
+        } catch (err) {
+          console.error("Error checking pending orders:", err.message);
+          return res.status(500).json({
+            message: "Không thể kiểm tra đơn hàng đang chờ",
+          });
+        }
+      }
+
+      restaurant.isTemporarilyClosed = isTemporarilyClosed;
+      restaurant.closureReason = isTemporarilyClosed ? (reason || "Tạm thời đóng cửa") : null;
+      await restaurant.save();
+
+      console.log(`✅ Restaurant ${restaurant._id} ${isTemporarilyClosed ? 'closed' : 'opened'} temporarily`);
+
+      return res.json({
+        message: `Nhà hàng đã ${isTemporarilyClosed ? 'đóng cửa' : 'mở cửa'} thành công`,
+        isTemporarilyClosed: restaurant.isTemporarilyClosed,
+        closureReason: restaurant.closureReason
+      });
+    } catch (err) {
+      console.error("❌ Toggle closure error:", err.message);
+      res.status(500).json({ message: "Lỗi server khi thay đổi trạng thái" });
+    }
+  }
+);
+
+// =============================
+// REQUEST PERMANENT CLOSURE (RESTAURANT OWNER)
+// =============================
+router.post(
+  "/request-permanent-closure",
+  verifyToken,
+  allowRoles("restaurant"),
+  async (req, res) => {
+    try {
+      const ownerId = req.user.id;
+      const { reason } = req.body;
+
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: "Vui lòng nhập lý do đóng tài khoản" });
+      }
+
+      console.log(`🏪 Restaurant owner ${ownerId} requesting permanent closure`);
+
+      const restaurant = await Restaurant.findOne({ ownerId });
+      if (!restaurant) {
+        return res.status(404).json({ message: "Nhà hàng không tồn tại" });
+      }
+
+      // Kiểm tra xem đã có yêu cầu pending chưa
+      const hasPendingRequest = restaurant.closureRequests?.some(
+        req => req.status === 'pending'
+      );
+
+      if (hasPendingRequest) {
+        return res.status(400).json({ 
+          message: "Bạn đã có yêu cầu đóng tài khoản đang chờ xử lý" 
+        });
+      }
+
+      // Thêm yêu cầu mới
+      if (!restaurant.closureRequests) {
+        restaurant.closureRequests = [];
+      }
+
+      restaurant.closureRequests.push({
+        requestType: 'permanent_closure',
+        reason: reason.trim(),
+        status: 'pending',
+        requestedAt: new Date()
+      });
+
+      await restaurant.save();
+
+      console.log(`✅ Permanent closure request created for restaurant ${restaurant._id}`);
+
+      return res.json({
+        message: "Yêu cầu đóng tài khoản đã được gửi. Admin sẽ xem xét trong thời gian sớm nhất.",
+        request: restaurant.closureRequests[restaurant.closureRequests.length - 1]
+      });
+    } catch (err) {
+      console.error("❌ Request permanent closure error:", err.message);
+      res.status(500).json({ message: "Lỗi server khi gửi yêu cầu" });
+    }
+  }
+);
+
+// =============================
+// GET RESTAURANT STATUS (RESTAURANT OWNER)
+// =============================
+router.get(
+  "/my-status",
+  verifyToken,
+  allowRoles("restaurant"),
+  async (req, res) => {
+    try {
+      const ownerId = req.user.id;
+
+      const restaurant = await Restaurant.findOne({ ownerId });
+      if (!restaurant) {
+        return res.status(404).json({ message: "Nhà hàng không tồn tại" });
+      }
+
+      // Get owner lock status
+      const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
+      let isLocked = false;
+      let lockReason = null;
+
+      try {
+        const response = await axios.post(
+          `${AUTH_SERVICE_URL}/admin/users/bulk-info`,
+          { ids: [ownerId] },
+          { timeout: 3000 }
+        );
+        if (response.data && response.data.length > 0) {
+          isLocked = response.data[0].isLocked || false;
+          lockReason = response.data[0].lockReason || null;
+        }
+      } catch (err) {
+        console.warn("Warning: Could not fetch owner lock status:", err.message);
+      }
+
+      // Get pending closure request
+      const pendingRequest = restaurant.closureRequests?.find(
+        req => req.status === 'pending'
+      );
+
+      return res.json({
+        restaurantId: restaurant._id,
+        name: restaurant.name,
+        isTemporarilyClosed: restaurant.isTemporarilyClosed,
+        closureReason: restaurant.closureReason,
+        isLocked,
+        lockReason,
+        hasPendingClosureRequest: !!pendingRequest,
+        pendingClosureRequest: pendingRequest || null
+      });
+    } catch (err) {
+      console.error("❌ Get restaurant status error:", err.message);
+      res.status(500).json({ message: "Lỗi server khi lấy thông tin" });
     }
   }
 );
