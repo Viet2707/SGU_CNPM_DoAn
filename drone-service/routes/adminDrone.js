@@ -49,6 +49,20 @@ router.post("/", verifyToken, allowRoles("admin"), async (req, res) => {
 router.put("/:id", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
     const update = req.body; // cho phép sửa name, baseLocation, capacityKg, isActive, ...
+    
+    // Nếu admin cố gắng disable drone (isActive = false), kiểm tra trạng thái
+    if (update.isActive === false) {
+      const drone = await Drone.findById(req.params.id);
+      if (!drone) return res.status(404).json({ message: "Drone not found" });
+      
+      if (drone.status !== "idle") {
+        return res.status(400).json({ 
+          message: `Không thể disable drone khi đang ở trạng thái "${drone.status}". Chỉ có thể disable khi drone đang "idle"`,
+          currentStatus: drone.status
+        });
+      }
+    }
+    
     const drone = await Drone.findByIdAndUpdate(req.params.id, update, {
       new: true,
     });
@@ -79,12 +93,21 @@ router.put("/:id", verifyToken, allowRoles("admin"), async (req, res) => {
 // Disable drone (soft delete)
 router.patch("/:id/disable", verifyToken, allowRoles("admin"), async (req, res) => {
   try {
-    const drone = await Drone.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const drone = await Drone.findById(req.params.id);
     if (!drone) return res.status(404).json({ message: "Drone not found" });
+    
+    // Kiểm tra trạng thái drone - chỉ cho phép disable khi idle
+    if (drone.status !== "idle") {
+      return res.status(400).json({ 
+        message: `Không thể disable drone khi đang ở trạng thái "${drone.status}". Chỉ có thể disable khi drone đang "idle"`,
+        currentStatus: drone.status
+      });
+    }
+    
+    // Cập nhật isActive = false
+    drone.isActive = false;
+    await drone.save();
+    
     res.json({ message: "Drone disabled", drone });
   } catch (err) {
     res.status(500).json({ message: "Failed to disable drone" });

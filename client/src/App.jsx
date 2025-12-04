@@ -17,6 +17,7 @@ import { CartProvider } from "./CartContext";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDroneList from "./pages/AdminDroneList";
 import DroneTracking from "./pages/DroneTracking";
+import RestaurantDroneTracking from "./pages/RestaurantDroneTracking";
 
 const App = () => {
   return (
@@ -35,6 +36,7 @@ const App = () => {
             <Route path="/restaurant/menu/add" element={<MenuManagement />} />
             <Route path="/restaurant/menu" element={<MenuItemsList />} />
             <Route path="/restaurant/orders" element={<RestaurantOrders />} />
+            <Route path="/restaurant/track-drone/:orderId" element={<RestaurantDroneTracking />} />
           </Route>
           <Route element={<ProtectedLayout allowedRoles={["customer"]} />}>
             <Route path="/create-order" element={<CreateOrder />} />

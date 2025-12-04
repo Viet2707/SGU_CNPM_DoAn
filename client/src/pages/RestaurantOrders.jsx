@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const RestaurantOrders = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -123,23 +125,38 @@ const RestaurantOrders = () => {
                   )}
                 </div>
 
-                <div className="border-t border-gray-800 pt-4 flex justify-between items-center">
-                  <div className="space-x-2">
-                    {order.status === 'pending' ? (
+                <div className="border-t border-gray-800 pt-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="space-x-2">
+                      {order.status === 'pending' ? (
+                        <button
+                          onClick={() => handleStatusUpdate(order._id, 'accepted')}
+                          className="bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-600"
+                        >
+                          Accept Order
+                        </button>
+                      ) : (
+                        <p className="text-gray-400 text-sm">No actions available</p>
+                      )}
+                    </div>
+                    <div className="font-bold">
+                      <span>Total: </span>
+                      <span className="text-yellow-500">${order.total ? order.total.toFixed(2) : '0.00'}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Track Drone button for drone deliveries - only show when in-transit */}
+                  {order.deliveryMethod === 'drone' && order.status === 'in-transit' && (
+                    <div className="mt-3">
                       <button
-                        onClick={() => handleStatusUpdate(order._id, 'accepted')}
-                        className="bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-600"
+                        onClick={() => navigate(`/restaurant/track-drone/${order._id}`)}
+                        className="w-full bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center justify-center gap-2"
                       >
-                        Accept Order
+                        <span>🚁</span>
+                        <span>Track Drone Delivery</span>
                       </button>
-                    ) : (
-                      <p className="text-gray-400 text-sm">No actions available</p>
-                    )}
-                  </div>
-                  <div className="font-bold">
-                    <span>Total: </span>
-                    <span className="text-yellow-500">${order.total ? order.total.toFixed(2) : '0.00'}</span>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

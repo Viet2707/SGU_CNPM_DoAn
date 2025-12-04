@@ -206,6 +206,66 @@ router.get(
   }
 );
 
+// ✅ Check if restaurant has pending orders (admin)
+router.get(
+  "/restaurant/:restaurantId/has-pending-orders",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+      if (!restaurantId) {
+        return res.status(400).json({ message: "Missing restaurantId" });
+      }
+
+      // Kiểm tra các đơn hàng chưa delivered (pending, accepted, in-transit)
+      const pendingCount = await Order.countDocuments({ 
+        restaurantId,
+        status: { $in: ["pending", "accepted", "in-transit"] }
+      });
+
+      res.json({ 
+        restaurantId, 
+        hasPendingOrders: pendingCount > 0,
+        pendingOrderCount: pendingCount 
+      });
+    } catch (err) {
+      console.error("Error checking restaurant pending orders:", err.message);
+      res.status(500).json({ message: "Failed to check restaurant pending orders" });
+    }
+  }
+);
+
+// ✅ Check if customer has pending orders (admin)
+router.get(
+  "/customer/:customerId/has-pending-orders",
+  verifyToken,
+  allowRoles("admin"),
+  async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      if (!customerId) {
+        return res.status(400).json({ message: "Missing customerId" });
+      }
+
+      // Kiểm tra các đơn hàng chưa delivered (pending, accepted, in-transit)
+      const pendingCount = await Order.countDocuments({ 
+        customerId,
+        status: { $in: ["pending", "accepted", "in-transit"] }
+      });
+
+      res.json({ 
+        customerId, 
+        hasPendingOrders: pendingCount > 0,
+        pendingOrderCount: pendingCount 
+      });
+    } catch (err) {
+      console.error("Error checking customer pending orders:", err.message);
+      res.status(500).json({ message: "Failed to check customer pending orders" });
+    }
+  }
+);
+
 // ✅ Get order counts for multiple customers (admin)
 router.post(
   "/customers/order-counts",

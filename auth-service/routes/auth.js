@@ -191,6 +191,34 @@ router.patch("/admin/customers/:id/lock", verifyToken, allowRoles("admin"), asyn
       return res.status(403).json({ message: "Can only lock/unlock customer accounts" });
     }
 
+    // Nếu đang khóa (isLocked = true), kiểm tra đơn hàng pending
+    if (isLocked) {
+      const axios = require("axios");
+      const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+      
+      try {
+        const pendingCheckResponse = await axios.get(
+          `${ORDER_SERVICE_URL}/admin/customer/${id}/has-pending-orders`,
+          {
+            headers: { Authorization: req.headers.authorization },
+            timeout: 3000
+          }
+        );
+
+        if (pendingCheckResponse.data.hasPendingOrders) {
+          return res.status(400).json({
+            message: `Không thể khóa khách hàng vì còn ${pendingCheckResponse.data.pendingOrderCount} đơn hàng chưa giao xong`,
+            pendingOrderCount: pendingCheckResponse.data.pendingOrderCount,
+          });
+        }
+      } catch (err) {
+        console.error("Error checking customer pending orders:", err.message);
+        return res.status(500).json({
+          message: "Không thể kiểm tra đơn hàng đang chờ của khách hàng",
+        });
+      }
+    }
+
     // Update lock status
     customer.isLocked = isLocked;
     await customer.save();

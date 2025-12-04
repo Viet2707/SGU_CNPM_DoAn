@@ -425,6 +425,33 @@ router.patch(
         return res.status(404).json({ message: "Nhà hàng không tồn tại" });
       }
 
+      // Nếu đang khóa (isLocked = true), kiểm tra đơn hàng pending
+      if (isLocked) {
+        const ORDER_SERVICE_URL =
+          process.env.ORDER_SERVICE_URL || "http://order-service:5003";
+        
+        try {
+          const pendingCheckResponse = await axios.get(
+            `${ORDER_SERVICE_URL}/admin/restaurant/${restaurantId}/has-pending-orders`,
+            {
+              headers: { Authorization: req.headers.authorization },
+            }
+          );
+
+          if (pendingCheckResponse.data.hasPendingOrders) {
+            return res.status(400).json({
+              message: `Không thể khóa nhà hàng vì còn ${pendingCheckResponse.data.pendingOrderCount} đơn hàng chưa giao xong`,
+              pendingOrderCount: pendingCheckResponse.data.pendingOrderCount,
+            });
+          }
+        } catch (err) {
+          console.error("Error checking pending orders:", err.message);
+          return res.status(500).json({
+            message: "Không thể kiểm tra đơn hàng đang chờ của nhà hàng",
+          });
+        }
+      }
+
       // Lock/unlock the owner account via auth-service
       const AUTH_SERVICE_URL =
         process.env.AUTH_SERVICE_URL || "http://auth-service:5001";
