@@ -12,6 +12,7 @@ const HomeAll = () => {
   const [error, setError] = useState('');
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [priceRange, setPriceRange] = useState(null);
   const navigate = useNavigate();
 
   // Check if user is logged in
@@ -45,22 +46,30 @@ const HomeAll = () => {
     fetchMenuItems();
   }, []);
 
-  // Update search results when searchQuery changes
+  // Update search results when searchQuery or priceRange changes
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setSearchResults([]);
-      return;
+    let filteredItems = menuItems;
+
+    // Filter by search query
+    if (searchQuery.trim() !== '') {
+      filteredItems = filteredItems.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.restaurantName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-    
-    const filteredItems = menuItems.filter(item =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.restaurantName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    
+
+    // Filter by price range
+    if (priceRange) {
+      filteredItems = filteredItems.filter(item => {
+        const price = item.price;
+        return price >= priceRange.min && price <= priceRange.max;
+      });
+    }
+
     setSearchResults(filteredItems);
-  }, [searchQuery, menuItems]);
+  }, [searchQuery, priceRange, menuItems]);
 
   // Handle adding item to cart
   const handleAddToCart = (item) => {
@@ -101,7 +110,20 @@ const HomeAll = () => {
 
   // Filter menu items for display
   const getDisplayItems = () => {
-    return searchQuery.trim() !== '' ? searchResults : menuItems;
+    if (searchQuery.trim() !== '' || priceRange) {
+      return searchResults;
+    }
+    return menuItems;
+  };
+
+  // Handle price range filter
+  const handlePriceFilter = (min, max) => {
+    if (priceRange && priceRange.min === min && priceRange.max === max) {
+      // If clicking the same range, clear the filter
+      setPriceRange(null);
+    } else {
+      setPriceRange({ min, max });
+    }
   };
 
   // Filter for popular items (we'll consider items with lower prices as popular for demonstration)
@@ -208,6 +230,66 @@ const HomeAll = () => {
         )}
       </header>
 
+      {/* Price Filter Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-700 font-medium">Lọc theo giá:</span>
+            <button
+              onClick={() => handlePriceFilter(0, 10)}
+              className={`px-4 py-2 rounded-full border transition ${
+                priceRange?.min === 0 && priceRange?.max === 10
+                  ? 'bg-green-500 text-white border-green-500'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+              }`}
+            >
+              $0 - $10
+            </button>
+            <button
+              onClick={() => handlePriceFilter(10, 20)}
+              className={`px-4 py-2 rounded-full border transition ${
+                priceRange?.min === 10 && priceRange?.max === 20
+                  ? 'bg-green-500 text-white border-green-500'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+              }`}
+            >
+              $10 - $20
+            </button>
+            <button
+              onClick={() => handlePriceFilter(20, 30)}
+              className={`px-4 py-2 rounded-full border transition ${
+                priceRange?.min === 20 && priceRange?.max === 30
+                  ? 'bg-green-500 text-white border-green-500'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+              }`}
+            >
+              $20 - $30
+            </button>
+            <button
+              onClick={() => handlePriceFilter(30, 40)}
+              className={`px-4 py-2 rounded-full border transition ${
+                priceRange?.min === 30 && priceRange?.max === 40
+                  ? 'bg-green-500 text-white border-green-500'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+              }`}
+            >
+              $30 - $40
+            </button>
+            {priceRange && (
+              <button
+                onClick={() => setPriceRange(null)}
+                className="px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       <main className="flex-1 container mx-auto px-4 py-8">
         {error && (
           <div className="bg-red-500 text-white p-3 rounded mb-4">
@@ -220,22 +302,37 @@ const HomeAll = () => {
             <div className="w-12 h-12 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto"></div>
             <p className="mt-4 text-gray-400">Loading menu items...</p>
           </div>
-        ) : searchQuery && searchResults.length === 0 ? (
+        ) : (searchQuery || priceRange) && searchResults.length === 0 ? (
           <div className="text-center py-8 bg-gray-100 rounded-lg max-w-xl mx-auto">
-            <p className="text-xl mb-4">No menu items found for "{searchQuery}"</p>
+            <p className="text-xl mb-4">
+              {searchQuery 
+                ? `Không tìm thấy món ăn cho "${searchQuery}"` 
+                : `Không có món ăn trong khoảng giá $${priceRange.min} - $${priceRange.max}`
+              }
+            </p>
             <button 
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setPriceRange(null);
+              }}
               className="text-green-500 underline"
             >
-              Clear search
+              Xóa bộ lọc
             </button>
           </div>
         ) : (
           <>
-            {/* Search Results */}
-            {searchQuery && (
+            {/* Search Results or Filtered Results */}
+            {(searchQuery || priceRange) && (
               <div className="mb-16">
-                <h2 className="text-2xl font-bold mb-4">Search Results for "{searchQuery}"</h2>
+                <h2 className="text-2xl font-bold mb-4">
+                  {searchQuery && priceRange 
+                    ? `Kết quả tìm kiếm cho "${searchQuery}" (Giá: $${priceRange.min} - $${priceRange.max})`
+                    : searchQuery 
+                    ? `Kết quả tìm kiếm cho "${searchQuery}"`
+                    : `Món ăn từ $${priceRange.min} - $${priceRange.max}`
+                  }
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {searchResults.map(item => (
                     <div
@@ -280,8 +377,8 @@ const HomeAll = () => {
               </div>
             )}
 
-            {/* Only show these sections if not searching */}
-            {!searchQuery && (
+            {/* Only show these sections if not searching or filtering */}
+            {!searchQuery && !priceRange && (
               <>
                 {/* Special Offers Section */}
                 <div className="mb-16">
